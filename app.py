@@ -30,7 +30,7 @@ from streamlit_google_auth import Authenticate
 
 # Secure way to fetch keys on deployment
 API_KEY = st.secrets["GOOGLE_API_KEY"]
-DATA_FOLDER = "DATA"
+DATA_FOLDER = "data"
 DB_PATH = "./chroma_db"
 SQL_DB_FILE = "advocate_ai_v2.db"
 MODEL_NAME = "gemini-2.5-flash" 
@@ -367,6 +367,7 @@ else:
         * Daniyal Faraz
 
         """)
+
 
 
 
