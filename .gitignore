@@ -1,0 +1,16 @@
+# Security: Never upload these!
+.streamlit/secrets.toml
+client_secret.json
+
+# Databases: Keep your local case history off the web
+*.db
+chroma_db/
+
+# Python: Useless for GitHub
+venv/
+__pycache__/
+*.pyc
+
+# OS temporary files
+.DS_Store
+Thumbs.db
