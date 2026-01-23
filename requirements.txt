@@ -9,3 +9,7 @@ chromadb
 langchain-chroma
 langchain-google-genai
 pysqlite3-binary
+PyPDF2
+chromadb
+langchain-chroma
+langchain-google-genai
