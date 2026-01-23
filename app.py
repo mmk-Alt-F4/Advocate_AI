@@ -190,10 +190,9 @@ if "law_db" not in st.session_state:
 # 5. AUTH
 # ==============================================================================
 
-# 1. Get secrets and create the physical file on the server
+# 1. Create the physical file on the server from secrets
 try:
     config_dict = dict(st.secrets["google_auth"])
-    # Most versions of this library expect the 'web' wrapper
     secret_data = {"web": config_dict}
     
     with open('client_secret.json', 'w') as f:
@@ -203,12 +202,14 @@ except KeyError:
     st.error("Missing 'google_auth' in Streamlit Secrets!")
     st.stop()
 
-# 2. Initialize with only the arguments the library definitely supports
+# 2. Positional Arguments: (file_path, redirect_uri, cookie_name, cookie_key, expiry)
+# We pass them without names to match the library's older version
 authenticator = Authenticate(
-    client_secrets_file='client_secret.json',
-    cookie_name='advocate_ai_cookie',
-    cookie_expiry_days=30,
-    redirect_uri=config_dict['redirect_uris'][0]
+    'client_secret.json', 
+    config_dict['redirect_uris'][0], 
+    'advocate_ai_cookie',
+    'legal_app_secret_key', 
+    30
 )
 
 if "logged_in" not in st.session_state: 
@@ -363,6 +364,7 @@ else:
         * Daniyal Faraz
 
         """)
+
 
 
 
