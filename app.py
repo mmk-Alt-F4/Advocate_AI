@@ -189,25 +189,27 @@ if "law_db" not in st.session_state:
 # ==============================================================================
 # 5. AUTH
 # ==============================================================================
-# ==============================================================================
-# 5. AUTH
-# ==============================================================================
 
-# Fetch config directly from Streamlit Secrets
+# 1. Get secrets from Streamlit dashboard
 try:
-    # This turns the secrets into a standard Python dictionary
     config_dict = dict(st.secrets["google_auth"])
+    # The library expects the data to be wrapped in a "web" key
+    secret_data = {"web": config_dict}
+    
+    # 2. Create a temporary file on the server so the library is happy
+    with open('client_secret.json', 'w') as f:
+        json.dump(secret_data, f)
+        
 except KeyError:
     st.error("Missing 'google_auth' in Streamlit Secrets!")
     st.stop()
 
-# Initialize using 'client_config' instead of the filename string
+# 3. Now we can pass the filename because the file actually exists now!
 authenticator = Authenticate(
-    client_config=config_dict, 
-    redirect_uri=config_dict['redirect_uris'][0], 
+    secret_key='legal_app_secret_key', # Added this for session security
     cookie_name='advocate_ai_cookie',
-    cookie_key='legal_app_secret_key', 
-    cookie_expiry_days=30
+    cookie_expiry_days=30,
+    client_secrets_file='client_secret.json'
 )
 
 if "logged_in" not in st.session_state: 
@@ -363,6 +365,7 @@ else:
         * Daniyal Faraz
 
         """)
+
 
 
 
