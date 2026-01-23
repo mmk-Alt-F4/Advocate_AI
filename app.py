@@ -190,8 +190,8 @@ if "law_db" not in st.session_state:
 # 5. AUTH
 # ==============================================================================
 
-with open('client_secret.json', 'r') as f:
-    config_data = json.load(f)["web"]
+# ✅ THIS READS DIRECTLY FROM YOUR STREAMLIT SECRETS BOX
+config_data = st.secrets["google_auth"]
 
 authenticator = Authenticate(
     'client_secret.json', 
@@ -348,4 +348,5 @@ else:
         * Ibrahim Sohail
         * Huzaifa Khan
         * Daniyal Faraz
+
         """)
