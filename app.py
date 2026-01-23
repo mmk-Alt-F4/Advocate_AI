@@ -190,10 +190,16 @@ if "law_db" not in st.session_state:
 # 5. AUTH
 # ==============================================================================
 
-# 1. Create the physical file on the server from secrets
+# 1. Create the physical file on the server from secrets with CORRECT nesting
 try:
+    # Google expects: {"web": {"client_id": "...", "project_id": "...", ...}}
     config_dict = dict(st.secrets["google_auth"])
-    secret_data = {"web": config_dict}
+    
+    # Check if 'web' is already in there; if not, wrap it.
+    if "web" in config_dict:
+        secret_data = config_dict
+    else:
+        secret_data = {"web": config_dict}
     
     with open('client_secret.json', 'w') as f:
         json.dump(secret_data, f)
@@ -202,11 +208,10 @@ except KeyError:
     st.error("Missing 'google_auth' in Streamlit Secrets!")
     st.stop()
 
-# 2. Positional Arguments: (file_path, redirect_uri, cookie_name, cookie_key, expiry)
-# We pass them without names to match the library's older version
+# 2. Positional Arguments matching your server's library version
 authenticator = Authenticate(
     'client_secret.json', 
-    config_dict['redirect_uris'][0], 
+    config_dict.get('redirect_uris', [""])[0], 
     'advocate_ai_cookie',
     'legal_app_secret_key', 
     30
@@ -222,6 +227,7 @@ def login_page():
         with st.container(border=True):
             t1, t2 = st.tabs(["Google", "Email"])
             with t1: 
+                # This is where the magic happens
                 authenticator.login()
             with t2:
                 e = st.text_input("Email")
@@ -364,6 +370,7 @@ else:
         * Daniyal Faraz
 
         """)
+
 
 
 
