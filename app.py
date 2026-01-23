@@ -8,7 +8,8 @@ import streamlit.components.v1 as components
 import json
 import re
 from datetime import datetime
-
+import chromadb
+from langchain_chroma import Chroma
 # ==============================================================================
 # 1. SYSTEM CONFIGURATION
 # ==============================================================================
@@ -370,6 +371,7 @@ else:
         * Daniyal Faraz
 
         """)
+
 
 
 
