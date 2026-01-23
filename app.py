@@ -190,18 +190,28 @@ if "law_db" not in st.session_state:
 # 5. AUTH
 # ==============================================================================
 
-# ✅ THIS READS DIRECTLY FROM YOUR STREAMLIT SECRETS BOX
-config_data = st.secrets["google_auth"]
+# ==============================================================================
+# 5. AUTH
+# ==============================================================================
 
+# Fetch config directly from Streamlit Secrets
+try:
+    config_data = st.secrets["google_auth"]
+except KeyError:
+    st.error("Missing 'google_auth' in Streamlit Secrets!")
+    st.stop()
+
+# Initialize using client_config instead of a physical file
 authenticator = Authenticate(
-    'client_secret.json', 
+    client_config=dict(config_data), 
     redirect_uri=config_data['redirect_uris'][0], 
     cookie_name='advocate_ai_cookie',
     cookie_key='legal_app_secret_key', 
     cookie_expiry_days=30
 )
 
-if "logged_in" not in st.session_state: st.session_state.logged_in = False
+if "logged_in" not in st.session_state: 
+    st.session_state.logged_in = False
 
 def login_page():
     c1, c2, c3 = st.columns([1, 2, 1])
@@ -209,12 +219,15 @@ def login_page():
         st.write("# ⚖️ Advocate AI")
         with st.container(border=True):
             t1, t2 = st.tabs(["Google", "Email"])
-            with t1: authenticator.login()
+            with t1: 
+                authenticator.login()
             with t2:
                 e = st.text_input("Email")
                 if st.button("Enter"):
                     if "@" in e:
-                        st.session_state.logged_in, st.session_state.user_email, st.session_state.username = True, e, e.split("@")[0].title()
+                        st.session_state.logged_in = True
+                        st.session_state.user_email = e
+                        st.session_state.username = e.split("@")[0].title()
                         db_register_user(e, st.session_state.username)
                         st.rerun()
 
@@ -350,3 +363,4 @@ else:
         * Daniyal Faraz
 
         """)
+
