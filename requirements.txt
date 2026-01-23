@@ -5,4 +5,7 @@ langchain-google-genai
 langchain-community
 chromadb
 pypdf
+chromadb
+langchain-chroma
+langchain-google-genai
 pysqlite3-binary
