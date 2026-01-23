@@ -1,0 +1,8 @@
+streamlit
+streamlit-mic-recorder
+streamlit-google-auth
+langchain-google-genai
+langchain-community
+chromadb
+pypdf
+pysqlite3-binary
