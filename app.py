@@ -139,7 +139,7 @@ sync_data_folder()
 
 @st.cache_resource
 def load_llm():
-    return ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=API_KEY, temperature=0.2)
+    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=API_KEY, temperature=0.2)
 
 def play_voice_js(text, lang_code):
     safe_text = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
@@ -309,3 +309,4 @@ else:
 # ==============================================================================
 # END OF SCRIPT
 # ==============================================================================
+
