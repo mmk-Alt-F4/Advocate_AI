@@ -214,8 +214,8 @@ init_relational_db()
 def load_ai_engine():
     """Initializes Gemini with senior legal advisory parameters."""
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
-        google_api_key=API_KEY, 
+        model="gemini-2.5-flash", 
+        GOOGLE_API_KEY=API_KEY, 
         temperature=0.2,
         max_output_tokens=3500
     )
@@ -400,3 +400,4 @@ else:
 # ==============================================================================
 # END OF SCRIPT - VERBOSE & COMPREHENSIVE
 # ==============================================================================
+
