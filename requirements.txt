@@ -12,5 +12,8 @@ pysqlite3-binary
 PyPDF2
 chromadb
 langchain-chroma
+langchain-google-genaipysqlite3-binary
 langchain-google-genai
+streamlit-mic-recorder
+streamlit-google-auth
 
