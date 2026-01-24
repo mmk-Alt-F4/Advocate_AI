@@ -20,6 +20,7 @@ from email.mime.multipart import MIMEMultipart
 # ==============================================================================
 # 1. INITIALIZATION & DATABASE MANAGEMENT (FULL PERSISTENCE)
 # ==============================================================================
+# This section handles the SQLite backend and file system setup.
 st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
 API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -30,9 +31,10 @@ if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
 def init_sql_db():
+    """Initializes all required tables if they do not exist."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    # Users Table
+    # Users Table: Stores local and Google-authenticated users
     c.execute('''CREATE TABLE IF NOT EXISTS users 
                  (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)''')
     
@@ -42,26 +44,27 @@ def init_sql_db():
     if 'password' not in columns:
         c.execute('ALTER TABLE users ADD COLUMN password TEXT DEFAULT ""')
 
-    # Cases Table
+    # Cases Table: Stores case names linked to user emails
     c.execute('''CREATE TABLE IF NOT EXISTS cases 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)''')
     
-    # History Table
+    # History Table: Stores the full chat log for every case
     c.execute('''CREATE TABLE IF NOT EXISTS history 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)''')
     
-    # Vectorized Documents Table
+    # Vectorized Documents Table: Tracks which PDFs are indexed
     c.execute('''CREATE TABLE IF NOT EXISTS documents 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, size TEXT, pages INTEGER, indexed TEXT)''')
     conn.commit()
     conn.close()
 
 def db_register_user(email, username, password=""):
+    """Registers a new user and initializes a default case for them."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     c.execute("INSERT OR IGNORE INTO users (email, username, password, joined_date) VALUES (?,?,?,?)", 
               (email, username, password, datetime.datetime.now().strftime("%Y-%m-%d")))
-    # Auto-create first case
+    # Auto-create first case if none exists
     c.execute("SELECT count(*) FROM cases WHERE email=?", (email,))
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", 
@@ -70,6 +73,7 @@ def db_register_user(email, username, password=""):
     conn.close()
 
 def db_check_login(email, password):
+    """Validates local credentials."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     c.execute("SELECT username FROM users WHERE email=? AND password=?", (email, password))
@@ -78,6 +82,7 @@ def db_check_login(email, password):
     return res[0] if res else None
 
 def db_save_message(email, case_name, role, content):
+    """Saves a single message to the persistent history table."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     c.execute("SELECT id FROM cases WHERE email=? AND case_name=?", (email, case_name))
@@ -89,6 +94,7 @@ def db_save_message(email, case_name, role, content):
     conn.close()
 
 def db_load_history(email, case_name):
+    """Loads chat history for a specific case."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     c.execute('''SELECT role, content FROM history 
@@ -100,6 +106,7 @@ def db_load_history(email, case_name):
     return data
 
 def db_get_docs():
+    """Retrieves all indexed documents from the database."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     c.execute("SELECT name, size, pages, indexed FROM documents")
@@ -136,6 +143,7 @@ sync_data_folder()
 # 2. CORE UTILITIES (EMAIL, LLM, VOICE)
 # ==============================================================================
 def send_email_report(receiver_email, case_name, history):
+    """Compiles chat history and emails it to the user."""
     try:
         sender_email = st.secrets["EMAIL_USER"]
         sender_password = st.secrets["EMAIL_PASS"]
@@ -166,6 +174,7 @@ def send_email_report(receiver_email, case_name, history):
 
 @st.cache_resource
 def load_llm():
+    """Initializes the Gemini model with specific safety overrides."""
     return ChatGoogleGenerativeAI(
         model="gemini-1.5-flash", 
         google_api_key=API_KEY, 
@@ -179,6 +188,7 @@ def load_llm():
     )
 
 def play_voice_js(text, lang_code):
+    """Injects JavaScript to handle text-to-speech in the browser."""
     safe_text = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
     js_code = f"""
     <script>
@@ -210,9 +220,10 @@ except Exception as e:
     st.stop()
 
 # ==============================================================================
-# 4. CHAMBERS INTERFACE (RESTORED FULL LOGIC)
+# 4. CHAMBERS INTERFACE
 # ==============================================================================
 def render_chambers():
+    """Main consultation logic including voice and IRAC structure."""
     langs = {
         "English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", 
         "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"
@@ -309,6 +320,7 @@ def render_chambers():
 # 5. LEGAL LIBRARY & TEAM INFO
 # ==============================================================================
 def render_library():
+    """Renders the library page with the data folder sync status."""
     st.header("📚 Virtual Legal Library")
     st.subheader("📑 Document Indexing Engine")
     
@@ -337,6 +349,7 @@ def render_library():
         st.markdown("- **Anti-Terrorism Act (ATA) 1997**\n- **NAB Ordinance 1999**\n- **Family Laws 1961**")
 
 def render_about():
+    """Displays project information and developer team details."""
     st.header("ℹ️ Alpha Apex System Information")
     st.info("Alpha Apex is an AI-driven legal analytics suite optimized for the Pakistani Jurisprudence system.")
     
@@ -351,12 +364,13 @@ def render_about():
     st.table(team)
 
 # ==============================================================================
-# 6. AUTHENTICATION FLOW
+# 6. AUTHENTICATION FLOW (SIGN IN WITH GOOGLE IS HERE)
 # ==============================================================================
 def render_login():
+    """Handles both Google OAuth and Local SQL-based login."""
     st.title("⚖️ Alpha Apex Secure Gateway")
     
-    # Check if a Google Auth cookie already exists
+    # Check if a Google Auth session is already active via library
     try:
         user_info = authenticator.login()
         if user_info:
@@ -365,14 +379,15 @@ def render_login():
             st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
             db_register_user(st.session_state.user_email, st.session_state.username)
             st.rerun()
-    except:
-        pass
+    except Exception as e:
+        st.error(f"Google Login Button Error: {e}")
 
+    # Tabs for different entry methods
     tab1, tab2 = st.tabs(["Google Authentication", "Local Vault Access"])
     
     with tab1:
-        st.info("Use your organizational or personal Google account for access.")
-        # The button is rendered by the streamlit_google_auth library
+        st.info("Google Button is displayed above. If it is hidden, check your secrets config.")
+        st.write("Current Session State:", st.session_state.get('logged_in', False))
     
     with tab2:
         mode = st.radio("Access Mode", ["Login", "Register New User"], horizontal=True)
@@ -402,6 +417,7 @@ def render_login():
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# This logic handles routing after authentication
 if not st.session_state.logged_in:
     render_login()
 else:
@@ -412,3 +428,7 @@ else:
         render_library()
     else:
         render_about()
+
+# ==============================================================================
+# END OF CODE (380+ LINES)
+# ==============================================================================
