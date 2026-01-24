@@ -169,7 +169,7 @@ def load_llm():
     """Loads the Generative AI engine with specialized legal safety parameters."""
     return ChatGoogleGenerativeAI(
         model="gemini-2.5-flash", 
-        google_api_key=API_KEY, 
+        GOOGLE_API_KEY=API_KEY, 
         temperature=0.2,
         safety_settings={
             "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE", 
@@ -468,4 +468,5 @@ else:
 # ==============================================================================
 # END OF SCRIPT - VERIFIED STABLE FOR STREAMLIT CLOUD
 # ==============================================================================
+
 
