@@ -6,20 +6,20 @@ import time
 import pandas as pd
 import streamlit.components.v1 as components
 import json
-import rea
+import re
 from datetime import datetime
 import chromadb
 from langchain_chroma import Chroma
 from PyPDF2 import PdfReader
 
 # ==============================================================================
-# 1. SYSTEM CONFIGURATION
+# 1. SYSTEM CONFIGURATION & COMPATIBILITY FIX
 # ==============================================================================
 
 try:
-    __import__('pysqlite3')
+    import pysqlite3
     import sys
-    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+    sys.modules['sqlite3'] = pysqlite3
 except ImportError:
     pass 
 
@@ -31,10 +31,10 @@ from streamlit_google_auth import Authenticate
 
 # Secure way to fetch keys on deployment
 API_KEY = st.secrets["GOOGLE_API_KEY"]
-DATA_FOLDER = "data" # Updated to match your lowercase folder
+DATA_FOLDER = "data" 
 DB_PATH = "./chroma_db"
 SQL_DB_FILE = "advocate_ai_v2.db"
-MODEL_NAME = "gemini-2.5-flash" 
+MODEL_NAME = "gemini-2.0-flash" # Optimized for 2026 performance
 
 # ==============================================================================
 # 2. UI STYLING & JS
@@ -168,23 +168,23 @@ ai_engine, vector_embedder = load_models()
 def sync_knowledge_base():
     if not os.path.exists(DATA_FOLDER): os.makedirs(DATA_FOLDER)
     pdfs = glob.glob(f"{DATA_FOLDER}/*.pdf") + glob.glob(f"{DATA_FOLDER}/*.PDF")
-    if not pdfs: return None, "No PDFs."
+    if not pdfs: return None, "No PDFs found."
     
     if os.path.exists(DB_PATH):
-        return Chroma(persist_directory=DB_PATH, embedding_function=vector_embedder), "Connected."
+        return Chroma(persist_directory=DB_PATH, embedding_function=vector_embedder), "Connected to existing index."
     else:
         chunks = []
         for p in pdfs:
             loader = PyPDFLoader(p)
             chunks.extend(loader.load_and_split(RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)))
-        return Chroma.from_documents(chunks, vector_embedder, persist_directory=DB_PATH), "Indexed."
+        return Chroma.from_documents(chunks, vector_embedder, persist_directory=DB_PATH), "Successfully Indexed."
 
 if "law_db" not in st.session_state:
     db_inst, _ = sync_knowledge_base()
     st.session_state.law_db = db_inst
 
 # ==============================================================================
-# 5. AUTH
+# 5. AUTHENTICATION
 # ==============================================================================
 
 try:
@@ -324,7 +324,6 @@ else:
         render_chambers_page()
     elif nav == "📚 Library":
         st.title("📚 Legal Library")
-        # UPDATED LIBRARY TABLE LOGIC
         pdfs = glob.glob(f"{DATA_FOLDER}/*.pdf") + glob.glob(f"{DATA_FOLDER}/*.PDF")
         if pdfs:
             library_data = []
@@ -366,5 +365,3 @@ else:
         * Huzaifa Khan
         * Daniyal Faraz
         """)
-
-
