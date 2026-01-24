@@ -24,7 +24,7 @@ from streamlit_mic_recorder import speech_to_text
 from streamlit_google_auth import Authenticate
 
 # ==============================================================================
-# 1. SYSTEM CONFIGURATION & COMPATIBILITY FIX
+# 1. SYSTEM CONFIGURATION
 # ==============================================================================
 
 try:
@@ -36,7 +36,7 @@ except KeyError:
 DATA_FOLDER = "data" 
 DB_PATH = "./chroma_db"
 SQL_DB_FILE = "advocate_ai_v3.db"
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.0-flash"
 
 # ==============================================================================
 # 2. UI STYLING & JS
@@ -88,7 +88,7 @@ def play_voice_js(text, lang_code='en-US'):
                 var voices = window.speechSynthesis.getVoices();
                 if ({str(is_urdu).lower()}) {{
                     msg.lang = 'ur-PK';
-                    var v = voices.find(v => v.lang.includes('ur') || v.lang.includes('hi'));
+                    var v = voices.find(v => v.lang.includes('ur') or v.lang.includes('hi'));
                     if (v) msg.voice = v;
                 }} else {{
                     msg.lang = 'en-US';
@@ -107,13 +107,20 @@ def stream_text(text):
         time.sleep(0.01)
 
 # ==============================================================================
-# 3. DATABASE (SQLITE) - FULL IMPLEMENTATION
+# 3. DATABASE (SQLITE) - SCALABLE LOCAL VERSION
 # ==============================================================================
 
 def init_sql_db():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, joined_date TEXT)')
+    
+    # Check for password column and add if missing
+    c.execute("PRAGMA table_info(users)")
+    columns = [info[1] for info in c.fetchall()]
+    if 'password' not in columns:
+        c.execute('ALTER TABLE users ADD COLUMN password TEXT DEFAULT ""')
+        
     c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
     conn.commit()
@@ -124,9 +131,12 @@ def db_register_user(email, username, password=""):
     c = conn.cursor()
     c.execute("INSERT OR IGNORE INTO users (email, username, password, joined_date) VALUES (?,?,?,?)", 
               (email, username, password, datetime.datetime.now().strftime("%Y-%m-%d")))
+    
+    # Ensure every user has at least one case to prevent index errors
     c.execute("SELECT count(*) FROM cases WHERE email=?", (email,))
     if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", (email, "General Consultation", datetime.datetime.now().strftime("%Y-%m-%d")))
+        c.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", 
+                  (email, "General Consultation", datetime.datetime.now().strftime("%Y-%m-%d")))
     conn.commit()
     conn.close()
 
@@ -188,7 +198,7 @@ def db_clear_history(email, case_name):
 init_sql_db()
 
 # ==============================================================================
-# 4. EMAIL & UTILITY FUNCTIONS
+# 4. EMAIL & AI UTILS
 # ==============================================================================
 
 def send_email_report(receiver_email, case_name, history):
@@ -217,10 +227,6 @@ def send_email_report(receiver_email, case_name, history):
     except Exception as e:
         print(f"Email Error: {e}")
         return False
-
-# ==============================================================================
-# 5. AI & KNOWLEDGE BASE
-# ==============================================================================
 
 @st.cache_resource
 def load_models():
@@ -259,14 +265,13 @@ if "law_db" not in st.session_state:
     st.session_state.law_db = db_inst
 
 # ==============================================================================
-# 6. AUTHENTICATION & LOGIN/SIGNUP UI
+# 5. AUTHENTICATION & LOGIN/SIGNUP UI
 # ==============================================================================
 
 try:
     config_dict = dict(st.secrets["google_auth"])
-    secret_data = {"web": config_dict}
     with open('client_secret.json', 'w') as f:
-        json.dump(secret_data, f)
+        json.dump({"web": config_dict}, f)
     my_uri = config_dict['redirect_uris'][0]
 except KeyError:
     st.error("Missing google_auth in Streamlit Secrets")
@@ -279,6 +284,15 @@ authenticator = Authenticate(
     'legal_app_secret_key', 
     30
 )
+
+authenticator.check_authenticity()
+if st.session_state.get('connected'):
+    user_info = st.session_state.get('user_info', {})
+    if 'email' in user_info:
+        st.session_state.user_email = user_info.get('email')
+        st.session_state.username = user_info.get('name', "Counsel")
+        st.session_state.logged_in = True
+        db_register_user(st.session_state.user_email, st.session_state.username)
 
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
@@ -293,17 +307,17 @@ def login_signup_page():
                 authenticator.login()
             with t2:
                 auth_mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
-                email_in = st.text_input("Email")
-                pass_in = st.text_input("Password", type="password")
+                email_in = st.text_input("Email", key="email_field")
+                pass_in = st.text_input("Password", type="password", key="pass_field")
                 
                 if auth_mode == "Signup":
-                    name_in = st.text_input("Full Name")
+                    name_in = st.text_input("Full Name", key="name_field")
                     if st.button("Create Account"):
                         if email_in and pass_in and name_in:
                             db_register_user(email_in, name_in, pass_in)
-                            st.success("Account created successfully. Please switch to Login.")
+                            st.success("Account created! Now login above.")
                         else:
-                            st.warning("Please fill all fields.")
+                            st.warning("All fields are required.")
                 else:
                     if st.button("Sign In"):
                         username = db_check_login(email_in, pass_in)
@@ -313,45 +327,32 @@ def login_signup_page():
                             st.session_state.username = username
                             st.rerun()
                         else:
-                            st.error("Invalid email or password.")
+                            st.error("Invalid credentials.")
 
 # ==============================================================================
-# 7. CHAMBERS INTERFACE
+# 6. CHAMBERS INTERFACE
 # ==============================================================================
 
 def render_chambers_page():
-    langs = {
-        "English": "en-US",
-        "Urdu (اردو)": "ur-PK",
-        "Sindhi (سنڌي)": "sd-PK",
-        "Punjabi (پنجابی)": "pa-PK",
-        "Pashto (پښتو)": "ps-PK",
-        "Balochi (بلوچی)": "bal-PK"
-    }
+    langs = {"English": "en-US", "Urdu (اردو)": "ur-PK"}
 
     with st.sidebar:
         st.header(f"Counsel {st.session_state.username}")
-        
-        st.subheader("Language")
-        target_lang = st.selectbox("Choose Language", list(langs.keys()))
+        target_lang = st.selectbox("Language", list(langs.keys()))
         lang_code = langs[target_lang]
-        
         st.divider()
         
         cases = db_get_cases(st.session_state.user_email)
-        if "active_case" not in st.session_state: st.session_state.active_case = cases[0]
+        
+        if "active_case" not in st.session_state or st.session_state.active_case not in cases:
+            st.session_state.active_case = cases[0]
+            
         sel = st.selectbox("Case Files", cases, index=cases.index(st.session_state.active_case))
+        
         if sel != st.session_state.active_case:
             st.session_state.active_case = sel
             st.session_state.messages = db_load_history(st.session_state.user_email, sel)
             st.rerun()
-        
-        with st.expander("Rename Case"):
-            nt = st.text_input("New Name", value=st.session_state.active_case)
-            if st.button("Confirm Rename"):
-                db_rename_case(st.session_state.user_email, st.session_state.active_case, nt)
-                st.session_state.active_case = nt
-                st.rerun()
         
         if st.button("New Case"):
             db_create_case(st.session_state.user_email, f"Case {len(cases)+1}")
@@ -363,19 +364,6 @@ def render_chambers_page():
             st.rerun()
         
         st.divider()
-        
-        if st.button("Email Report"):
-            history = db_load_history(st.session_state.user_email, st.session_state.active_case)
-            if history:
-                with st.spinner("Processing..."):
-                    if send_email_report(st.session_state.user_email, st.session_state.active_case, history):
-                        st.success("Sent")
-                    else:
-                        st.error("Error")
-            else:
-                st.warning("Empty History")
-        
-        st.divider()
         if st.button("Log Out"):
             st.session_state.logged_in = False
             st.session_state.connected = False
@@ -383,156 +371,81 @@ def render_chambers_page():
 
     st.title(f"Case File: {st.session_state.active_case}")
 
-    q_col1, q_col2, q_col3 = st.columns(3)
-    quick_q = None
-    if q_col1.button("Infer Legal Path"): quick_q = "What is the recommended legal path forward?"
-    if q_col2.button("Give Ruling"): quick_q = "Give a preliminary observation on these facts."
-    if q_col3.button("Summarize"): quick_q = "Summarize the legal history of this case."
-
-    # Persistent Chat History
-    if "messages" not in st.session_state or st.session_state.get("last_case") != st.session_state.active_case:
+    if "messages" not in st.session_state:
         st.session_state.messages = db_load_history(st.session_state.user_email, st.session_state.active_case)
-        st.session_state.last_case = st.session_state.active_case
 
-    chat_container = st.container()
-    with chat_container:
-        for msg in st.session_state.messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-    # Bottom Input logic
     c_text, c_mic = st.columns([10, 1])
     with c_text:
         text_in = st.chat_input(f"Consult in {target_lang}...")
     with c_mic:
-        st.markdown('<div class="mic-box">', unsafe_allow_html=True)
-        voice_in = speech_to_text(language=lang_code, start_prompt="", stop_prompt="", key='mic_chambers', just_once=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        voice_in = speech_to_text(language=lang_code, key='mic_chambers', just_once=True)
 
-    final_in = quick_q or voice_in or text_in
+    final_in = voice_in or text_in
 
     if final_in:
         db_save_message(st.session_state.user_email, st.session_state.active_case, "user", final_in)
         st.session_state.messages.append({"role": "user", "content": final_in})
         
-        with chat_container:
-            with st.chat_message("user"):
-                st.markdown(final_in)
+        with st.chat_message("user"):
+            st.markdown(final_in)
+        
+        with st.chat_message("assistant"):
+            p, res = st.empty(), ""
+            ctx = ""
+            if st.session_state.law_db:
+                docs = st.session_state.law_db.as_retriever(search_kwargs={"k": 4}).invoke(final_in)
+                ctx = "\n\n".join([d.page_content for d in docs])
             
-            with st.chat_message("assistant"):
-                p, res = st.empty(), ""
+            prompt = f"""
+            Role: High Court Advocate. 
+            Format: IRAC. 
+            Lang: {target_lang}. 
+            No emojis.
+            Context: {ctx}
+            Query: {final_in}
+            """
+            
+            try:
+                ai_out = ai_engine.invoke(prompt).content
+                for chunk in stream_text(ai_out):
+                    res += chunk
+                    p.markdown(res + "▌")
+                p.markdown(res)
                 
-                ctx = ""
-                if st.session_state.law_db:
-                    docs = st.session_state.law_db.as_retriever(search_kwargs={"k": 4}).invoke(final_in)
-                    ctx = "\n\n".join([d.page_content for d in docs])
-                
-                prompt = f"""
-                Role: You are Alpha Apex, a Senior Advocate of the High Court in Pakistan.
-                
-                Instructions:
-                1. GREETINGS: Respond professionally in {target_lang}. Introduce yourself and request facts. Do not use IRAC for greetings.
-                2. LEGAL QUERIES: Use the IRAC format strictly:
-                   - Issue: Define the legal question.
-                   - Rule: Cite relevant Pakistan Law (Penal Code, CrPC, etc.) from context.
-                   - Analysis: Apply laws to facts.
-                   - Conclusion: Final legal opinion.
-                
-                Strict Constraint: Do not use any emojis in your response. 
-                
-                Context: {ctx}
-                User Query: {final_in}
-                """
-                
-                try:
-                    ai_out = ai_engine.invoke(prompt).content
-                    for chunk in stream_text(ai_out):
-                        res += chunk
-                        p.markdown(res + "▌")
-                    p.markdown(res)
-                    
-                    db_save_message(st.session_state.user_email, st.session_state.active_case, "assistant", res)
-                    st.session_state.messages.append({"role": "assistant", "content": res})
-                    if voice_in:
-                        play_voice_js(res, lang_code)
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                db_save_message(st.session_state.user_email, st.session_state.active_case, "assistant", res)
+                st.session_state.messages.append({"role": "assistant", "content": res})
+                if voice_in:
+                    play_voice_js(res, lang_code)
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 # ==============================================================================
-# 8. LIBRARY PAGE
+# 8. PAGES
 # ==============================================================================
 
 def render_library_page():
     st.title("Legal Library")
-    pdfs = glob.glob(f"{DATA_FOLDER}/*.pdf") + glob.glob(f"{DATA_FOLDER}/*.PDF")
-    
-    if pdfs:
-        library_data = []
-        db_exists = os.path.exists(DB_PATH)
-        for p in pdfs:
-            file_name = os.path.basename(p)
-            file_size = round(os.path.getsize(p) / 1024, 2)
-            try:
-                reader = PdfReader(p)
-                pages = len(reader.pages)
-            except:
-                pages = "N/A"
-                
-            library_data.append({
-                "Document Name": file_name,
-                "Pages": pages,
-                "Size (KB)": file_size,
-                "Status": "Indexed" if db_exists else "Pending"
-            })
-        st.table(library_data)
-    else:
-        st.warning(f"No documents in {DATA_FOLDER}")
-        
     if st.button("Sync Library"):
-        with st.spinner("Working..."):
-            db_inst, msg = sync_knowledge_base()
-            st.session_state.law_db = db_inst
-            st.success(msg)
-            st.rerun()
-
-# ==============================================================================
-# 9. TEAM PAGE
-# ==============================================================================
+        db_inst, msg = sync_knowledge_base()
+        st.session_state.law_db = db_inst
+        st.success(msg)
 
 def render_team_page():
-    st.title("Development Team")
-    st.info("Alpha Apex - Advanced Legal Intelligence for Pakistan")
-    st.markdown("""
-    Project Contributors:
-    * Saim Ahmed
-    * Mustafa Khan
-    * Ibrahim Sohail
-    * Huzaifa Khan
-    * Daniyal Faraz
-    """)
+    st.title("Team")
+    st.write("Alpha Apex Contributors.")
 
 # ==============================================================================
-# 10. MAIN EXECUTION FLOW
+# 9. EXECUTION
 # ==============================================================================
-
-# OAuth handling
-if st.session_state.get('connected'):
-    user_info = st.session_state.get('user_info', {})
-    st.session_state.user_email = user_info.get('email')
-    st.session_state.username = user_info.get('name', "Counsel")
-    st.session_state.logged_in = True
-    db_register_user(st.session_state.user_email, st.session_state.username)
 
 if not st.session_state.logged_in:
     login_signup_page()
 else:
-    with st.sidebar:
-        st.markdown("---")
-        nav = st.sidebar.radio("Navigate", ["Chambers", "Library", "Team"], label_visibility="collapsed")
-    
-    if nav == "Chambers":
-        render_chambers_page()
-    elif nav == "Library":
-        render_library_page()
-    else:
-        render_team_page()
+    nav = st.sidebar.radio("Navigate", ["Chambers", "Library", "Team"])
+    if nav == "Chambers": render_chambers_page()
+    elif nav == "Library": render_library_page()
+    else: render_team_page()
