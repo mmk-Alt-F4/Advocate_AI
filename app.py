@@ -36,6 +36,10 @@ def init_sql_db():
 
     c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
+    
+    # Table for tracking vectorized PDFs
+    c.execute('''CREATE TABLE IF NOT EXISTS documents 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, size TEXT, pages INTEGER, indexed TEXT)''')
     conn.commit()
     conn.close()
 
@@ -75,6 +79,14 @@ def db_load_history(email, case_name):
     c = conn.cursor()
     c.execute("SELECT role, content FROM history JOIN cases ON history.case_id = cases.id WHERE cases.email=? AND cases.case_name=? ORDER BY history.id ASC", (email, case_name))
     data = [{"role": r, "content": t} for r, t in c.fetchall()]
+    conn.close()
+    return data
+
+def db_get_docs():
+    conn = sqlite3.connect(SQL_DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT name, size, pages, indexed FROM documents")
+    data = c.fetchall()
     conn.close()
     return data
 
@@ -128,7 +140,7 @@ def play_voice_js(text, lang_code):
     components.html(js_code, height=0)
 
 # ==============================================================================
-# 3. GOOGLE OAUTH CONFIG
+# 3. GOOGLE OAUTH CONFIG & LOGIN HANDLER (FIXED)
 # ==============================================================================
 try:
     auth_config = dict(st.secrets["google_auth"])
@@ -145,7 +157,7 @@ except Exception as e:
     st.error(f"OAuth Config Missing: {e}")
     st.stop()
 
-# Handle authentication
+# This handles the redirect and session state automatically
 user_info = authenticator.login()
 
 if user_info:
@@ -232,12 +244,23 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT
+# 5. LIBRARY & ABOUT (WITH SYNCED PDF TABLE)
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library")
-    st.info("Pakistan's Primary Legal Statutes.")
     
+    # PDF Sync Table Section
+    st.subheader("📑 Vectorized Document Index")
+    docs = db_get_docs()
+    if docs:
+        import pandas as pd
+        df = pd.DataFrame(docs, columns=["File Name", "Size", "Pages", "Status"])
+        st.table(df)
+    else:
+        st.info("No documents have been vectorized yet.")
+
+    st.divider()
+    st.subheader("⚖️ Primary Legal Statutes")
     t1, t2, t3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
     with t1:
         st.write("**Pakistan Penal Code (PPC) 1860**")
@@ -265,10 +288,12 @@ def render_about():
 # ==============================================================================
 def render_login():
     st.title("⚖️ Alpha Apex Login")
-    tab1, tab2 = st.tabs(["Google Login", "Manual Access"])
+    tab1, tab2 = st.tabs(["Google Access", "Manual Access"])
     
     with tab1:
-        st.info("The Google Login button will appear if authentication is not active.")
+        # The login button is automatically handled by the top-level authenticator.login()
+        # If not logged in, it shows the "Sign in with Google" button by default.
+        st.write("Please use the Google Sign-In button above or below to continue.")
 
     with tab2:
         mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
