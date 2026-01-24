@@ -48,7 +48,7 @@ st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 st.markdown("""
     <style>
     .main .block-container { padding-bottom: 150px; }
-    .stChatMessage { border-radius: 15px; margin-bottom: 10px; border: 1px solid #eee; }
+    .stChatMessage { border-radius: 15px; margin-bottom: 10px; border: 1px solid #333; }
     .mic-box {
         display: flex;
         align-items: center;
@@ -59,9 +59,13 @@ st.markdown("""
         font-family: 'Segoe UI', 'Tahoma', sans-serif;
         font-size: 1.1rem;
     }
-    /* Sidebar Styling */
+    /* Sidebar Styling - UPDATED TO BLACK */
     [data-testid="stSidebar"] {
-        background-color: #f9f9f9;
+        background-color: #000000;
+        border-right: 1px solid #333;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p {
+        color: #ffffff;
     }
     </style>
 """, unsafe_allow_html=True)
