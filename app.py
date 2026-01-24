@@ -46,9 +46,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 try:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
+    API_KEY = st.secrets["GOOGLE_API_KEY"]
 except KeyError:
-    st.error("Missing GEMINI_API_KEY in Streamlit Secrets")
+    st.error("Missing GOOGLE_API_KEY in Streamlit Secrets")
     st.stop()
 
 SQL_DB_FILE = "advocate_ai_v3.db"
@@ -370,4 +370,5 @@ else:
         render_library()
     else: 
         render_about()
+
 
