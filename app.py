@@ -276,7 +276,6 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         smtp_sender = st.secrets["EMAIL_USER"]
         smtp_pass = st.secrets["EMAIL_PASS"].replace(" ", "")
         
-        # FIX: Construct valid email content string
         email_content = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
         email_content += f"CHAMBER: {chamber_name}\n"
         email_content += f"GENERATED ON: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -287,13 +286,10 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
             clean_body = re.sub(r'[*#_]', '', entry['content'])
             email_content += f"[{speaker}]: {clean_body}\n\n"
             
-        # FIX: Ensure MIME structure correctly includes the body
         msg = MIMEMultipart()
         msg['From'] = f"Alpha Apex Chambers <{smtp_sender}>"
         msg['To'] = target_email
         msg['Subject'] = f"Legal Consult Brief: {chamber_name}"
-        
-        # Attach text using UTF-8 to prevent empty body errors
         msg.attach(MIMEText(email_content, 'plain', 'utf-8'))
         
         server = smtplib.SMTP('smtp.gmail.com', 587)
