@@ -18,7 +18,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 # ==============================================================================
-# 1. INITIALIZATION & DATABASE
+# 1. INITIALIZATION & DATABASE MANAGEMENT (FULL PERSISTENCE)
 # ==============================================================================
 st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
@@ -32,14 +32,25 @@ if not os.path.exists(DATA_FOLDER):
 def init_sql_db():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
+    # Users Table
+    c.execute('''CREATE TABLE IF NOT EXISTS users 
+                 (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)''')
+    
+    # Ensure password column exists for legacy migrations
     c.execute("PRAGMA table_info(users)")
     columns = [info[1] for info in c.fetchall()]
     if 'password' not in columns:
         c.execute('ALTER TABLE users ADD COLUMN password TEXT DEFAULT ""')
 
-    c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
-    c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
+    # Cases Table
+    c.execute('''CREATE TABLE IF NOT EXISTS cases 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)''')
+    
+    # History Table
+    c.execute('''CREATE TABLE IF NOT EXISTS history 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)''')
+    
+    # Vectorized Documents Table
     c.execute('''CREATE TABLE IF NOT EXISTS documents 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, size TEXT, pages INTEGER, indexed TEXT)''')
     conn.commit()
@@ -50,6 +61,7 @@ def db_register_user(email, username, password=""):
     c = conn.cursor()
     c.execute("INSERT OR IGNORE INTO users (email, username, password, joined_date) VALUES (?,?,?,?)", 
               (email, username, password, datetime.datetime.now().strftime("%Y-%m-%d")))
+    # Auto-create first case
     c.execute("SELECT count(*) FROM cases WHERE email=?", (email,))
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", 
@@ -79,7 +91,10 @@ def db_save_message(email, case_name, role, content):
 def db_load_history(email, case_name):
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute("SELECT role, content FROM history JOIN cases ON history.case_id = cases.id WHERE cases.email=? AND cases.case_name=? ORDER BY history.id ASC", (email, case_name))
+    c.execute('''SELECT role, content FROM history 
+                 JOIN cases ON history.case_id = cases.id 
+                 WHERE cases.email=? AND cases.case_name=? 
+                 ORDER BY history.id ASC''', (email, case_name))
     data = [{"role": r, "content": t} for r, t in c.fetchall()]
     conn.close()
     return data
@@ -93,13 +108,14 @@ def db_get_docs():
     return data
 
 def sync_data_folder():
+    """Reads PDF metadata from /data and populates the library table."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     existing_docs = [row[0] for row in c.execute("SELECT name FROM documents").fetchall()]
     
     if os.path.exists(DATA_FOLDER):
         for filename in os.listdir(DATA_FOLDER):
-            if filename.endswith(".pdf") and filename not in existing_docs:
+            if filename.lower().endswith(".pdf") and filename not in existing_docs:
                 path = os.path.join(DATA_FOLDER, filename)
                 try:
                     reader = PdfReader(path)
@@ -107,7 +123,8 @@ def sync_data_folder():
                     size = f"{os.path.getsize(path) / 1024:.1f} KB"
                     c.execute("INSERT INTO documents (name, size, pages, indexed) VALUES (?, ?, ?, ?)", 
                               (filename, size, pages, "✅ Indexed"))
-                except:
+                except Exception as e:
+                    print(f"Error reading {filename}: {e}")
                     continue
     conn.commit()
     conn.close()
@@ -116,21 +133,27 @@ init_sql_db()
 sync_data_folder()
 
 # ==============================================================================
-# 2. CORE UTILITIES
+# 2. CORE UTILITIES (EMAIL, LLM, VOICE)
 # ==============================================================================
 def send_email_report(receiver_email, case_name, history):
     try:
         sender_email = st.secrets["EMAIL_USER"]
         sender_password = st.secrets["EMAIL_PASS"]
-        report_content = f"Legal Report: {case_name}\n" + "="*30 + "\n\n"
+        
+        report_content = f"Legal Consultation Report: {case_name}\n"
+        report_content += f"Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+        report_content += "="*50 + "\n\n"
+        
         for m in history:
-            role = "Counsel" if m['role'] == 'assistant' else "Client"
-            report_content += f"[{role}]: {m['content']}\n\n"
+            label = "Counsel" if m['role'] == 'assistant' else "Client"
+            report_content += f"[{label}]: {m['content']}\n\n"
+        
         msg = MIMEMultipart()
-        msg['From'] = f"Alpha Apex <{sender_email}>"
+        msg['From'] = f"Alpha Apex AI <{sender_email}>"
         msg['To'] = receiver_email
-        msg['Subject'] = f"Legal Summary: {case_name}"
+        msg['Subject'] = f"Legal Case Summary: {case_name}"
         msg.attach(MIMEText(report_content, 'plain'))
+        
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(sender_email, sender_password)
@@ -138,7 +161,7 @@ def send_email_report(receiver_email, case_name, history):
         server.quit()
         return True
     except Exception as e:
-        st.error(f"Email Failed: {e}")
+        st.error(f"Email Dispatch Failed: {e}")
         return False
 
 @st.cache_resource
@@ -157,11 +180,19 @@ def load_llm():
 
 def play_voice_js(text, lang_code):
     safe_text = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
-    js_code = f"<script>window.speechSynthesis.cancel(); var msg = new SpeechSynthesisUtterance('{safe_text}'); msg.lang = '{lang_code}'; window.speechSynthesis.speak(msg);</script>"
+    js_code = f"""
+    <script>
+    window.speechSynthesis.cancel();
+    var msg = new SpeechSynthesisUtterance('{safe_text}');
+    msg.lang = '{lang_code}';
+    msg.rate = 0.9;
+    window.speechSynthesis.speak(msg);
+    </script>
+    """
     components.html(js_code, height=0)
 
 # ==============================================================================
-# 3. GOOGLE OAUTH CONFIG
+# 3. GOOGLE OAUTH CONFIGURATION
 # ==============================================================================
 try:
     auth_config = dict(st.secrets["google_auth"])
@@ -175,145 +206,158 @@ try:
         redirect_uri=auth_config['redirect_uris'][0],
     )
 except Exception as e:
-    st.error(f"OAuth Config Missing: {e}")
+    st.error(f"Critical OAuth Configuration Failure: {e}")
     st.stop()
 
 # ==============================================================================
-# 4. PAGES
+# 4. CHAMBERS INTERFACE (RESTORED FULL LOGIC)
 # ==============================================================================
 def render_chambers():
-    langs = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"}
+    langs = {
+        "English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", 
+        "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"
+    }
     
     with st.sidebar:
         st.title("⚖️ Alpha Apex")
-        target_lang = st.selectbox("🌐 Language", list(langs.keys()))
+        target_lang = st.selectbox("🌐 Selection Language", list(langs.keys()))
         lang_code = langs[target_lang]
 
         st.divider()
-        st.subheader("🏛️ System Configuration")
-        with st.expander("Custom Instructions & Behavior", expanded=True):
-            sys_persona = st.text_input("Core Persona:", value="#You are a Pakistani law analyst")
-            custom_instructions = st.text_area("Custom System Instructions:", 
-                placeholder="e.g. Focus on inheritance law, always cite PPC 302, etc.")
-            use_irac = st.toggle("Enable IRAC Style", value=True)
+        st.subheader("🏛️ Legal Persona")
+        with st.expander("AI Behavior Tuning", expanded=True):
+            sys_persona = st.text_input("Core Persona:", value="#You are a highly analytical Pakistani law expert")
+            custom_instructions = st.text_area("Specific Directives:", 
+                placeholder="e.g. Focus on Civil Procedure, prioritize QSO 1984 citations.")
+            use_irac = st.toggle("Enforce IRAC Structure", value=True)
         
         st.divider()
-        st.subheader("📁 Case Management")
+        st.subheader("📁 Case Records")
         conn = sqlite3.connect(SQL_DB_FILE)
         cases = [r[0] for r in conn.execute("SELECT case_name FROM cases WHERE email=?", (st.session_state.user_email,)).fetchall()]
         conn.close()
         
-        active_case = st.selectbox("Current Case", cases if cases else ["General Consultation"])
+        active_case = st.selectbox("Active Case", cases if cases else ["General Consultation"])
         st.session_state.active_case = active_case
 
-        new_case = st.text_input("New Case Name")
-        if st.button("➕ Create"):
-            if new_case:
+        new_case_name = st.text_input("New Case Identifier")
+        if st.button("➕ Initialize Case"):
+            if new_case_name:
                 conn = sqlite3.connect(SQL_DB_FILE)
-                conn.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", (st.session_state.user_email, new_case, "2026-01-24"))
+                conn.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", 
+                             (st.session_state.user_email, new_case_name, datetime.datetime.now().strftime("%Y-%m-%d")))
                 conn.commit(); conn.close(); st.rerun()
 
-        if st.button("🗑️ Delete"):
+        if st.button("📧 Email Report"):
+            hist = db_load_history(st.session_state.user_email, st.session_state.active_case)
+            if send_email_report(st.session_state.user_email, st.session_state.active_case, hist):
+                st.sidebar.success("Report Sent!")
+
+        if st.button("🗑️ Archive Case"):
             conn = sqlite3.connect(SQL_DB_FILE)
             conn.execute("DELETE FROM cases WHERE email=? AND case_name=?", (st.session_state.user_email, active_case))
             conn.commit(); conn.close(); st.rerun()
 
-        if st.button("🚪 Logout"):
+        if st.button("🚪 Terminate Session"):
             authenticator.logout()
             st.session_state.logged_in = False
             st.rerun()
 
     st.header(f"💼 Chambers: {st.session_state.active_case}")
     
+    # Display Chat History
     history = db_load_history(st.session_state.user_email, st.session_state.active_case)
     for m in history:
-        with st.chat_message(m["role"]): st.write(m["content"])
+        with st.chat_message(m["role"]):
+            st.write(m["content"])
 
-    m_col, i_col = st.columns([1, 8])
-    with m_col: voice_in = speech_to_text(language=lang_code, key='mic', just_once=True)
-    with i_col: text_in = st.chat_input("Start legal consultation...")
+    # Inputs
+    m_col, i_col = st.columns([1, 10])
+    with m_col:
+        voice_in = speech_to_text(language=lang_code, key='mic', just_once=True)
+    with i_col:
+        text_in = st.chat_input("Enter legal inquiry or prompt...")
 
     query = voice_in or text_in
     if query:
         db_save_message(st.session_state.user_email, st.session_state.active_case, "user", query)
-        with st.chat_message("user"): st.write(query)
+        with st.chat_message("user"):
+            st.write(query)
         
         with st.chat_message("assistant"):
             try:
-                irac_style = """Structure your response strictly using the IRAC method:
-                - ISSUE: Clearly state the legal question.
-                - RULE: Cite relevant sections of the Pakistan Penal Code (PPC) or Constitution.
-                - ANALYSIS: Apply the law to the client's specific facts.
-                - CONCLUSION: Provide a clear legal observation or next step.""" if use_irac else ""
+                irac_block = """
+                Strictly apply IRAC format:
+                1. ISSUE: Define the legal conflict.
+                2. RULE: Reference PPC, CrPC, CPC, or Constitution sections.
+                3. ANALYSIS: Correlate law with the provided facts.
+                4. CONCLUSION: Provide final legal stance.
+                """ if use_irac else ""
 
-                full_prompt = f"{sys_persona}\n{irac_style}\nADDITIONAL: {custom_instructions}\nLANG: {target_lang}\nClient Query: {query}"
+                full_prompt = f"{sys_persona}\n{irac_block}\nINSTRUCTIONS: {custom_instructions}\nLANGUAGE: {target_lang}\nINPUT: {query}"
+                
                 response = load_llm().invoke(full_prompt).content
                 st.markdown(response)
+                
                 db_save_message(st.session_state.user_email, st.session_state.active_case, "assistant", response)
                 play_voice_js(response, lang_code)
                 st.rerun()
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Consultation Error: {e}")
 
+# ==============================================================================
+# 5. LEGAL LIBRARY & TEAM INFO
+# ==============================================================================
 def render_library():
-    st.header("📚 Legal Library & Vector Index")
-    st.subheader("📑 Vectorized Document Index (Synced with /data)")
+    st.header("📚 Virtual Legal Library")
+    st.subheader("📑 Document Indexing Engine")
     
-    if st.button("🔄 Sync Data Folder"):
-        sync_data_folder()
-        st.rerun()
+    if st.button("🔄 Rescan /data Folder"):
+        with st.spinner("Indexing PDFs..."):
+            sync_data_folder()
+            st.rerun()
         
     docs = db_get_docs()
     if docs:
-        df = pd.DataFrame(docs, columns=["File Name", "Size", "Pages", "Status"])
+        df = pd.DataFrame(docs, columns=["File Name", "Size", "Page Count", "Indexing Status"])
         st.table(df)
     else:
-        st.info("No documents found in /data folder.")
+        st.warning("No PDF files detected in the project /data directory.")
 
     st.divider()
-    st.subheader("⚖️ Primary Legal Statutes")
-    t1, t2, t3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
+    st.subheader("⚖️ Essential Statutory References")
+    t1, t2, t3, t4 = st.tabs(["Criminal", "Civil", "Constitutional", "Special Laws"])
     with t1:
-        st.write("**Pakistan Penal Code (PPC) 1860**")
-        st.write("**Code of Criminal Procedure (CrPC) 1898**")
+        st.markdown("- **Pakistan Penal Code (PPC) 1860**\n- **Code of Criminal Procedure (CrPC) 1898**")
     with t2:
-        st.write("**Civil Procedure Code (CPC) 1908**")
-        st.write("**Contract Act 1872**")
-        st.write("**Qanun-e-Shahadat Order (QSO) 1984**")
+        st.markdown("- **Code of Civil Procedure (CPC) 1908**\n- **Contract Act 1872**\n- **Qanun-e-Shahadat Order 1984**")
     with t3:
-        st.write("**Constitution of Pakistan 1973**")
+        st.markdown("- **Constitution of the Islamic Republic of Pakistan 1973**")
+    with t4:
+        st.markdown("- **Anti-Terrorism Act (ATA) 1997**\n- **NAB Ordinance 1999**\n- **Family Laws 1961**")
 
 def render_about():
-    st.header("ℹ️ About Alpha Apex")
+    st.header("ℹ️ Alpha Apex System Information")
+    st.info("Alpha Apex is an AI-driven legal analytics suite optimized for the Pakistani Jurisprudence system.")
+    
+    st.subheader("👥 Project Development Team")
     team = [
-        {"Name": "Saim Ahmed", "Contact": "03700297696", "Email": "saimahmed.work733@gmail.com"},
-        {"Name": "Huzaifa Khan", "Contact": "03102526567", "Email": "m.huzaifa.khan471@gmail.com"},
-        {"Name": "Mustafa Khan", "Contact": "03460222290", "Email": "muhammadmustafakhan430@gmail.com"},
-        {"Name": "Ibrahim Sohail", "Contact": "03212046403", "Email": "ibrahimsohailkhan10@gmail.com"},
-        {"Name": "Daniyal Faraz", "Contact": "03333502530", "Email": "daniyalfarazkhan2012@gmail.com"},
+        {"Member": "Saim Ahmed", "ID": "Lead Developer", "Contact": "saimahmed.work733@gmail.com"},
+        {"Member": "Huzaifa Khan", "ID": "System Architect", "Contact": "m.huzaifa.khan471@gmail.com"},
+        {"Member": "Mustafa Khan", "ID": "Database Engineer", "Contact": "muhammadmustafakhan430@gmail.com"},
+        {"Member": "Ibrahim Sohail", "ID": "UI/UX Designer", "Contact": "ibrahimsohailkhan10@gmail.com"},
+        {"Member": "Daniyal Faraz", "ID": "QA Specialist", "Contact": "daniyalfarazkhan2012@gmail.com"},
     ]
     st.table(team)
 
 # ==============================================================================
-# 5. LOGIN FLOW
+# 6. AUTHENTICATION FLOW
 # ==============================================================================
-def check_auth():
-    # Check if user is already authenticated via Google
-    if not st.session_state.get('logged_in'):
-        user_info = authenticator.check_authentification()
-        if user_info:
-            st.session_state.logged_in = True
-            st.session_state.user_email = user_info['email']
-            st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
-            db_register_user(st.session_state.user_email, st.session_state.username)
-            st.rerun()
-
 def render_login():
-    st.title("⚖️ Alpha Apex Login")
-    tab1, tab2 = st.tabs(["Google Access", "Manual Access"])
+    st.title("⚖️ Alpha Apex Secure Gateway")
     
-    with tab1:
-        # Check if we already have a response from Google
+    # Check if a Google Auth cookie already exists
+    try:
         user_info = authenticator.login()
         if user_info:
             st.session_state.logged_in = True
@@ -321,40 +365,50 @@ def render_login():
             st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
             db_register_user(st.session_state.user_email, st.session_state.username)
             st.rerun()
+    except:
+        pass
 
+    tab1, tab2 = st.tabs(["Google Authentication", "Local Vault Access"])
+    
+    with tab1:
+        st.info("Use your organizational or personal Google account for access.")
+        # The button is rendered by the streamlit_google_auth library
+    
     with tab2:
-        mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
+        mode = st.radio("Access Mode", ["Login", "Register New User"], horizontal=True)
+        email = st.text_input("Secure Email")
+        password = st.text_input("Vault Password", type="password")
         
-        if mode == "Signup":
-            name = st.text_input("Full Name")
-            if st.button("Create Account"):
-                if "@" in email and password and name:
-                    db_register_user(email, name, password)
-                    st.success("Account created! Switch to Login mode.")
-                else: st.error("Please fill all fields correctly.")
+        if mode == "Register New User":
+            full_name = st.text_input("Legal Name")
+            if st.button("Initialize Account"):
+                if "@" in email and len(password) > 5 and full_name:
+                    db_register_user(email, full_name, password)
+                    st.success("Account Initialized. You may now login.")
+                else: st.error("Please provide valid registration details.")
         else:
-            if st.button("Login"):
+            if st.button("Authorize Access"):
                 username = db_check_login(email, password)
                 if username:
                     st.session_state.logged_in = True
                     st.session_state.user_email = email
                     st.session_state.username = username
                     st.rerun()
-                else: st.error("Invalid credentials.")
+                else: st.error("Authorization Denied: Invalid Credentials.")
 
 # ==============================================================================
-# 6. MAIN FLOW
+# 7. MASTER EXECUTION ENGINE
 # ==============================================================================
-if "logged_in" not in st.session_state: st.session_state.logged_in = False
-
-check_auth() # Handle persistent login
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
     render_login()
 else:
-    page = st.sidebar.radio("Navigation", ["Chambers", "Legal Library", "About"])
-    if page == "Chambers": render_chambers()
-    elif page == "Legal Library": render_library()
-    else: render_about()
+    nav_choice = st.sidebar.radio("Navigation", ["Chambers", "Legal Library", "System About"])
+    if nav_choice == "Chambers":
+        render_chambers()
+    elif nav_choice == "Legal Library":
+        render_library()
+    else:
+        render_about()
