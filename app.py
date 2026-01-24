@@ -34,7 +34,7 @@ API_KEY = st.secrets["GOOGLE_API_KEY"]
 DATA_FOLDER = "data" # Updated to match your lowercase folder
 DB_PATH = "./chroma_db"
 SQL_DB_FILE = "advocate_ai_v2.db"
-MODEL_NAME = "gemini-1.5-flash" 
+MODEL_NAME = "gemini-2.5-flash" 
 
 # ==============================================================================
 # 2. UI STYLING & JS
@@ -366,3 +366,4 @@ else:
         * Huzaifa Khan
         * Daniyal Faraz
         """)
+
