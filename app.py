@@ -27,11 +27,10 @@ from streamlit_google_auth import Authenticate
 # 1. SYSTEM CONFIGURATION & COMPATIBILITY FIX
 # ==============================================================================
 
-# Secure way to fetch keys on deployment
 try:
     API_KEY = st.secrets["GOOGLE_API_KEY"]
 except KeyError:
-    st.error("Missing 'GOOGLE_API_KEY' in Streamlit Secrets!")
+    st.error("Missing GOOGLE_API_KEY in Streamlit Secrets")
     st.stop()
 
 DATA_FOLDER = "data" 
@@ -43,7 +42,7 @@ MODEL_NAME = "gemini-2.5-flash"
 # 2. UI STYLING & JS
 # ==============================================================================
 
-st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
+st.set_page_config(page_title="Alpha Apex", layout="wide")
 
 st.markdown("""
     <style>
@@ -59,26 +58,27 @@ st.markdown("""
         font-family: 'Segoe UI', 'Tahoma', sans-serif;
         font-size: 1.1rem;
     }
-    /* Sidebar Styling - UPDATED TO BLACK */
+    /* Black Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: #000000;
         border-right: 1px solid #333;
     }
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p {
-        color: #ffffff;
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
+        color: #ffffff !important;
+    }
+    /* Buttons in Sidebar */
+    [data-testid="stSidebar"] .stButton button {
+        background-color: #222;
+        color: white;
+        border: 1px solid #444;
     }
     </style>
 """, unsafe_allow_html=True)
 
 def play_voice_js(text, lang_code='en-US'):
     safe_text = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
-    # Auto-detect Urdu if not strictly provided, but prefer the lang_code arg
-    if lang_code == 'ur-PK' or bool(re.search(r'[\u0600-\u06FF]', safe_text)):
-        is_urdu = True
-        lang = 'ur-PK'
-    else:
-        is_urdu = False
-        lang = 'en-US'
+    is_urdu = True if (lang_code == 'ur-PK' or bool(re.search(r'[\u0600-\u06FF]', safe_text))) else False
 
     js_code = f"""
         <script>
@@ -107,7 +107,7 @@ def stream_text(text):
         time.sleep(0.01)
 
 # ==============================================================================
-# 3. DATABASE (SQLITE)
+# 3. DATABASE (SQLITE) - FULL IMPLEMENTATION
 # ==============================================================================
 
 def init_sql_db():
@@ -169,6 +169,13 @@ def db_load_history(email, case_name):
     conn.close()
     return data
 
+def db_clear_history(email, case_name):
+    conn = sqlite3.connect(SQL_DB_FILE)
+    c = conn.cursor()
+    c.execute("DELETE FROM history WHERE case_id IN (SELECT id FROM cases WHERE email=? AND case_name=?)", (email, case_name))
+    conn.commit()
+    conn.close()
+
 init_sql_db()
 
 # ==============================================================================
@@ -199,7 +206,6 @@ def send_email_report(receiver_email, case_name, history):
         server.quit()
         return True
     except Exception as e:
-        # Fallback to console if sidebar context issue arises
         print(f"Email Error: {e}")
         return False
 
@@ -228,23 +234,23 @@ ai_engine, vector_embedder = load_models()
 def sync_knowledge_base():
     if not os.path.exists(DATA_FOLDER): os.makedirs(DATA_FOLDER)
     pdfs = glob.glob(f"{DATA_FOLDER}/*.pdf") + glob.glob(f"{DATA_FOLDER}/*.PDF")
-    if not pdfs: return None, "No PDFs found."
+    if not pdfs: return None, "No PDFs found"
     
     if os.path.exists(DB_PATH):
-        return Chroma(persist_directory=DB_PATH, embedding_function=vector_embedder), "Connected to existing index."
+        return Chroma(persist_directory=DB_PATH, embedding_function=vector_embedder), "Connected to index"
     else:
         chunks = []
         for p in pdfs:
             loader = PyPDFLoader(p)
             chunks.extend(loader.load_and_split(RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)))
-        return Chroma.from_documents(chunks, vector_embedder, persist_directory=DB_PATH), "Successfully Indexed."
+        return Chroma.from_documents(chunks, vector_embedder, persist_directory=DB_PATH), "Indexed"
 
 if "law_db" not in st.session_state:
     db_inst, _ = sync_knowledge_base()
     st.session_state.law_db = db_inst
 
 # ==============================================================================
-# 6. AUTHENTICATION (DUAL MODE)
+# 6. AUTHENTICATION
 # ==============================================================================
 
 try:
@@ -254,7 +260,7 @@ try:
         json.dump(secret_data, f)
     my_uri = config_dict['redirect_uris'][0]
 except KeyError:
-    st.error("Missing 'google_auth' in Streamlit Secrets!")
+    st.error("Missing google_auth in Streamlit Secrets")
     st.stop()
 
 authenticator = Authenticate(
@@ -271,7 +277,7 @@ if "logged_in" not in st.session_state:
 def login_page():
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
-        st.write("# ⚖️ Alpha Apex AI")
+        st.write("# Alpha Apex AI")
         with st.container(border=True):
             t1, t2 = st.tabs(["Google Login", "Email Login"])
             with t1: 
@@ -287,11 +293,10 @@ def login_page():
                         st.rerun()
 
 # ==============================================================================
-# 7. CHAMBERS INTERFACE
+# 7. CHAMBERS INTERFACE (FULL RENDER)
 # ==============================================================================
 
 def render_chambers_page():
-    # Focused Pakistani Languages
     langs = {
         "English": "en-US",
         "Urdu (اردو)": "ur-PK",
@@ -302,21 +307,20 @@ def render_chambers_page():
     }
 
     with st.sidebar:
-        st.header(f"👨‍⚖️ {st.session_state.username}")
+        st.header(f"Counsel {st.session_state.username}")
         
-        # Language Selector
-        st.subheader("🌐 Language")
+        st.subheader("Language")
         target_lang = st.selectbox("Choose Language", list(langs.keys()))
         lang_code = langs[target_lang]
         
         st.divider()
         
-        # Case Management
         cases = db_get_cases(st.session_state.user_email)
         if "active_case" not in st.session_state: st.session_state.active_case = cases[0]
         sel = st.selectbox("Case Files", cases, index=cases.index(st.session_state.active_case))
         if sel != st.session_state.active_case:
             st.session_state.active_case = sel
+            st.session_state.messages = db_load_history(st.session_state.user_email, sel)
             st.rerun()
         
         with st.expander("Rename Case"):
@@ -329,85 +333,89 @@ def render_chambers_page():
         if st.button("New Case"):
             db_create_case(st.session_state.user_email, f"Case {len(cases)+1}")
             st.rerun()
+
+        if st.button("Clear History"):
+            db_clear_history(st.session_state.user_email, st.session_state.active_case)
+            st.session_state.messages = []
+            st.rerun()
         
         st.divider()
         
-        # Email Report
-        if st.button("📧 Email Conversation"):
+        if st.button("Email Report"):
             history = db_load_history(st.session_state.user_email, st.session_state.active_case)
             if history:
-                with st.spinner("Sending report..."):
+                with st.spinner("Processing..."):
                     if send_email_report(st.session_state.user_email, st.session_state.active_case, history):
-                        st.success("Sent!")
+                        st.success("Sent")
                     else:
-                        st.error("Failed to send.")
+                        st.error("Error")
             else:
-                st.warning("No history found.")
+                st.warning("Empty History")
         
         st.divider()
         if st.button("Log Out"):
             st.session_state.logged_in = False
             st.rerun()
 
-    # --- MAIN CHAT AREA ---
-    st.title(f"💼 {st.session_state.active_case}")
+    st.title(f"Case File: {st.session_state.active_case}")
 
-    # Quick Actions
+    # Action Row
     q_col1, q_col2, q_col3 = st.columns(3)
     quick_q = None
-    if q_col1.button("⚖️ Infer Legal Path"): quick_q = "What is the recommended legal path forward?"
-    if q_col2.button("📜 Give Ruling"): quick_q = "Give a preliminary observation on these facts."
-    if q_col3.button("📝 Summarize"): quick_q = "Summarize the legal history of this case."
+    if q_col1.button("Infer Legal Path"): quick_q = "What is the recommended legal path forward?"
+    if q_col2.button("Give Ruling"): quick_q = "Give a preliminary observation on these facts."
+    if q_col3.button("Summarize"): quick_q = "Summarize the legal history of this case."
 
-    # Chat History
-    history_container = st.container()
-    with history_container:
-        history = db_load_history(st.session_state.user_email, st.session_state.active_case)
-        for msg in history:
-            with st.chat_message(msg["role"]): st.markdown(msg["content"])
+    # Persistent Chat Container
+    if "messages" not in st.session_state or st.session_state.get("last_case") != st.session_state.active_case:
+        st.session_state.messages = db_load_history(st.session_state.user_email, st.session_state.active_case)
+        st.session_state.last_case = st.session_state.active_case
 
-    # Input Area
-    input_placeholder = st.container()
-    with input_placeholder:
-        c_text, c_mic = st.columns([10, 1])
-        with c_text:
-            text_in = st.chat_input(f"Consult in {target_lang}...")
-        with c_mic:
-            st.markdown('<div class="mic-box">', unsafe_allow_html=True)
-            voice_in = speech_to_text(language=lang_code, start_prompt="🎤", stop_prompt="⏹️", key='mic_chambers', just_once=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+    chat_placeholder = st.container()
+    with chat_placeholder:
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-    final_in = quick_q if quick_q else (voice_in if voice_in else text_in)
-    is_v = True if voice_in else False
+    # Input Control
+    c_text, c_mic = st.columns([10, 1])
+    with c_text:
+        text_in = st.chat_input(f"Consult in {target_lang}...")
+    with c_mic:
+        st.markdown('<div class="mic-box">', unsafe_allow_html=True)
+        voice_in = speech_to_text(language=lang_code, start_prompt="", stop_prompt="", key='mic_chambers', just_once=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    final_in = quick_q or voice_in or text_in
 
     if final_in:
         db_save_message(st.session_state.user_email, st.session_state.active_case, "user", final_in)
-        with history_container:
-            with st.chat_message("user"): st.markdown(final_in)
+        st.session_state.messages.append({"role": "user", "content": final_in})
+        
+        with chat_placeholder:
+            with st.chat_message("user"):
+                st.markdown(final_in)
+            
             with st.chat_message("assistant"):
                 p, res = st.empty(), ""
                 
-                # RAG Context Retrieval
                 ctx = ""
                 if st.session_state.law_db:
                     docs = st.session_state.law_db.as_retriever(search_kwargs={"k": 4}).invoke(final_in)
                     ctx = "\n\n".join([d.page_content for d in docs])
                 
-                # UPDATED PROMPT: IRAC Style + Role + Greeting Handling
                 prompt = f"""
-                Role: You are Alpha Apex, a distinguished Senior Advocate of the High Court in Pakistan.
+                Role: You are Alpha Apex, a Senior Advocate of the High Court in Pakistan.
                 
                 Instructions:
-                1. GREETINGS: If the user input is a greeting (e.g., "Salam", "Hello", "Hi"), accept it warmly and professionally in {target_lang}. Briefly introduce yourself and ask for the legal facts. Do NOT use IRAC for simple greetings.
-                2. LEGAL QUERIES: For any legal question or fact pattern, you MUST output your response in strict IRAC format:
-                   - **Issue**: Clearly state the legal question at hand.
-                   - **Rule**: Cite specific sections of the Pakistan Penal Code, CrPC, Constitution, or Case Law provided in the 'Context' below.
-                   - **Analysis**: Apply the legal rules to the specific facts provided by the user.
-                   - **Conclusion**: Provide a concise legal opinion or recommended course of action.
+                1. GREETINGS: Respond professionally in {target_lang}. Introduce yourself and request facts. Do not use IRAC for greetings.
+                2. LEGAL QUERIES: Use the IRAC format strictly:
+                   - Issue: Define the legal question.
+                   - Rule: Cite relevant Pakistan Law (Penal Code, CrPC, etc.) from context.
+                   - Analysis: Apply laws to facts.
+                   - Conclusion: Final legal opinion.
                 
-                Constraints:
-                - Use ONLY the provided Context if relevant.
-                - Respond strictly in the {target_lang} language/script.
+                Strict Constraint: Do not use any emojis in your response. 
                 
                 Context: {ctx}
                 User Query: {final_in}
@@ -419,16 +427,20 @@ def render_chambers_page():
                         res += chunk
                         p.markdown(res + "▌")
                     p.markdown(res)
+                    
                     db_save_message(st.session_state.user_email, st.session_state.active_case, "assistant", res)
-                    if is_v: play_voice_js(res, lang_code)
-                except Exception as e: st.error(f"Error: {e}")
+                    st.session_state.messages.append({"role": "assistant", "content": res})
+                    if voice_in:
+                        play_voice_js(res, lang_code)
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
 # ==============================================================================
-# 8. LIBRARY PAGE
+# 8. LIBRARY PAGE (FULL RENDER)
 # ==============================================================================
 
 def render_library_page():
-    st.title("📚 Legal Library")
+    st.title("Legal Library")
     pdfs = glob.glob(f"{DATA_FOLDER}/*.pdf") + glob.glob(f"{DATA_FOLDER}/*.PDF")
     
     if pdfs:
@@ -447,14 +459,14 @@ def render_library_page():
                 "Document Name": file_name,
                 "Pages": pages,
                 "Size (KB)": file_size,
-                "Status": "✅ Indexed" if db_exists else "⏳ Pending"
+                "Status": "Indexed" if db_exists else "Pending"
             })
         st.table(library_data)
     else:
-        st.warning(f"No legal documents found in '{DATA_FOLDER}' folder.")
+        st.warning(f"No documents in {DATA_FOLDER}")
         
-    if st.button("🔄 Sync Library"):
-        with st.spinner("Processing documents..."):
+    if st.button("Sync Library"):
+        with st.spinner("Working..."):
             db_inst, msg = sync_knowledge_base()
             st.session_state.law_db = db_inst
             st.success(msg)
@@ -465,10 +477,10 @@ def render_library_page():
 # ==============================================================================
 
 def render_team_page():
-    st.title("ℹ️ Development Team")
+    st.title("Development Team")
     st.info("Alpha Apex - Advanced Legal Intelligence for Pakistan")
     st.markdown("""
-    **Project Contributors:**
+    Project Contributors:
     * Saim Ahmed
     * Mustafa Khan
     * Ibrahim Sohail
@@ -494,11 +506,11 @@ if not st.session_state.get('logged_in'):
 else:
     with st.sidebar:
         st.markdown("---")
-        nav = st.radio("Navigate", ["🏢 Chambers", "📚 Library", "ℹ️ Team"], label_visibility="collapsed")
+        nav = st.radio("Navigate", ["Chambers", "Library", "Team"], label_visibility="collapsed")
     
-    if nav == "🏢 Chambers":
+    if nav == "Chambers":
         render_chambers_page()
-    elif nav == "📚 Library":
+    elif nav == "Library":
         render_library_page()
     else:
         render_team_page()
