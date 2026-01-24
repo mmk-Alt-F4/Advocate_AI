@@ -1,12 +1,16 @@
 # ==============================================================================
 # ALPHA APEX - LEVIATHAN ENTERPRISE LEGAL INTELLIGENCE SYSTEM
-# VERSION: 29.0 (STRICT PROCEDURAL LOGIC - NO CONDENSING)
+# VERSION: 30.0 (STRICT PROCEDURAL LOGIC - STABLE DATABASE BRIDGE)
 # ARCHITECTS: SAIM AHMED, HUZAIFA KHAN, MUSTAFA KHAN, IBRAHIM SOHAIL, DANIYAL FARAZ
 # ==============================================================================
 
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+try:
+    import pysqlite3
+    import sys
+    sys.modules['sqlite3'] = pysqlite3
+except ImportError:
+    # Fallback for environments where pysqlite3 isn't required
+    import sqlite3
 
 import streamlit as st
 import sqlite3
@@ -40,27 +44,27 @@ st.set_page_config(
 def apply_leviathan_shaders():
     """
     Injects a permanent Dark Mode CSS architecture.
-    Expanded with explicit animation and element-specific styling.
+    Explicitly defined UI components for enterprise-grade visuals.
     """
     shader_css = """
     <style>
-        /* Global Reset */
+        /* Global Reset and Stability Layer */
         * { transition: background-color 0.8s ease, color 0.8s ease !important; }
         
-        /* Permanent Dark Canvas */
+        /* Permanent Dark App Canvas */
         .stApp { 
             background-color: #020617 !important; 
             color: #f1f5f9 !important; 
         }
 
-        /* Sidebar Glassmorphism */
+        /* Sidebar Glassmorphism Architecture */
         [data-testid="stSidebar"] {
             background-color: rgba(15, 23, 42, 0.98) !important;
             border-right: 2px solid #38bdf8 !important;
             box-shadow: 10px 0 20px rgba(0,0,0,0.5) !important;
         }
 
-        /* Chat Geometry */
+        /* High-Fidelity Chat Geometry */
         .stChatMessage {
             border-radius: 20px !important;
             padding: 2.5rem !important;
@@ -70,17 +74,15 @@ def apply_leviathan_shaders():
             background-color: rgba(30, 41, 59, 0.3) !important;
         }
 
-        /* Typography */
-        h1, h2, h3, h4, h5 { 
+        /* Headlines and Typography */
+        h1, h2, h3, h4 { 
             color: #38bdf8 !important; 
             font-weight: 900 !important; 
             text-transform: uppercase;
             letter-spacing: 2px;
         }
 
-        .stMarkdown { line-height: 1.8; }
-
-        /* Button Architecture */
+        /* Precision Button Styling */
         .stButton>button {
             border-radius: 12px !important;
             font-weight: 800 !important;
@@ -101,7 +103,7 @@ def apply_leviathan_shaders():
             color: #0f172a !important;
         }
 
-        /* Input Interaction */
+        /* Input Field Refinement */
         .stTextInput>div>div>input {
             background-color: rgba(255,255,255,0.05) !important;
             color: #ffffff !important;
@@ -109,13 +111,13 @@ def apply_leviathan_shaders():
             border-radius: 10px !important;
         }
 
-        /* Scrollbar Design */
+        /* Scrollbar Aesthetics */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
 
-        /* Hide Streamlit Native UI */
+        /* Hide Default Streamlit Elements */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
@@ -124,10 +126,10 @@ def apply_leviathan_shaders():
     st.markdown(shader_css, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (EXPLICIT TRANSACTIONAL)
+# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (STRICT PROCEDURAL)
 # ==============================================================================
 
-SQL_DB_FILE = "alpha_apex_leviathan_master_v29.db"
+SQL_DB_FILE = "alpha_apex_leviathan_master_v30.db"
 DATA_FOLDER = "law_library_assets"
 
 if not os.path.exists(DATA_FOLDER):
@@ -138,7 +140,7 @@ def init_leviathan_db():
     connection = sqlite3.connect(SQL_DB_FILE)
     cursor = connection.cursor()
     
-    # User Registry
+    # Table 1: Master User Registry
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             email TEXT PRIMARY KEY, 
@@ -151,7 +153,7 @@ def init_leviathan_db():
         )
     ''')
     
-    # Case Chambers with Status Logic
+    # Table 2: Case Chamber Virtual Registry
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS chambers (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -164,7 +166,7 @@ def init_leviathan_db():
         )
     ''')
     
-    # Message Logs with Metadata
+    # Table 3: Transactional Consultation History
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS message_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -176,7 +178,7 @@ def init_leviathan_db():
         )
     ''')
     
-    # Jurisprudence Asset Vault
+    # Table 4: Digital Jurisprudence Metadata Vault
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS law_assets (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -188,7 +190,7 @@ def init_leviathan_db():
         )
     ''')
     
-    # System Usage Telemetry
+    # Table 5: System Telemetry Log
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS system_telemetry (
             event_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -204,121 +206,118 @@ def init_leviathan_db():
 
 def db_log_event(email, event_type, desc):
     """Explicitly logs system events for admin telemetry."""
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute('''
+    db_connection = sqlite3.connect(SQL_DB_FILE)
+    db_cursor = db_connection.cursor()
+    event_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    insert_sql = '''
         INSERT INTO system_telemetry (user_email, event_type, description, event_timestamp)
         VALUES (?, ?, ?, ?)
-    ''', (email, event_type, desc, ts))
-    conn.commit()
-    conn.close()
+    '''
+    db_cursor.execute(insert_sql, (email, event_type, desc, event_ts))
+    db_connection.commit()
+    db_connection.close()
 
 def db_create_vault_user(email, name, password):
-    """Registers users into the local SQL vault."""
-    if not email:
-        return False
-    if not password:
+    """Registers users into the local SQL vault with explicit error handling."""
+    if email == "" or password == "":
         return False
     
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
-    now_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn_obj = sqlite3.connect(SQL_DB_FILE)
+    cursor_obj = conn_obj.cursor()
+    current_time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     try:
-        cursor.execute('''
+        user_insert_query = '''
             INSERT INTO users (email, full_name, vault_key, registration_date) 
             VALUES (?, ?, ?, ?)
-        ''', (email, name, password, now_ts))
+        '''
+        cursor_obj.execute(user_insert_query, (email, name, password, current_time_str))
         
-        cursor.execute('''
+        chamber_insert_query = '''
             INSERT INTO chambers (owner_email, chamber_name, init_date) 
             VALUES (?, ?, ?)
-        ''', (email, "General Litigation Chamber", now_ts))
+        '''
+        cursor_obj.execute(chamber_insert_query, (email, "Primary Case Chamber", current_time_str))
         
-        conn.commit()
-        conn.close()
-        db_log_event(email, "REGISTRATION", "User account successfully created")
+        conn_obj.commit()
+        conn_obj.close()
+        db_log_event(email, "REGISTRATION", "New user identity established")
         return True
     except sqlite3.IntegrityError:
-        conn.close()
+        conn_obj.close()
         return False
     except Exception as e:
-        conn.close()
+        conn_obj.close()
         return False
 
 def db_verify_vault_access(email, password):
-    """Local credential verification."""
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
+    """Local credential verification for Sovereign Vault access."""
+    db_conn = sqlite3.connect(SQL_DB_FILE)
+    db_curr = db_conn.cursor()
     
-    query = "SELECT full_name FROM users WHERE email=? AND vault_key=?"
-    cursor.execute(query, (email, password))
+    auth_sql = "SELECT full_name FROM users WHERE email=? AND vault_key=?"
+    db_curr.execute(auth_sql, (email, password))
     
-    auth_result = cursor.fetchone()
-    conn.close()
+    row_data = db_curr.fetchone()
+    db_conn.close()
     
-    if auth_result:
-        db_log_event(email, "LOGIN", "Successful authentication")
-        return auth_result[0]
+    if row_data is not None:
+        db_log_event(email, "LOGIN", "Authorized access granted")
+        return row_data[0]
     else:
         return None
 
-def db_update_case_status(chamber_id, new_status):
-    """Explicit logic for updating case workflow status."""
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE chambers SET case_status = ? WHERE id = ?", (new_status, chamber_id))
-    conn.commit()
-    conn.close()
-
 def db_log_consultation(email, chamber_name, role, content):
-    """Saves legal consultation transactions."""
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
+    """Saves legal consultation transactions into the SQL persistence layer."""
+    conn_log = sqlite3.connect(SQL_DB_FILE)
+    curr_log = conn_log.cursor()
     
-    select_query = "SELECT id FROM chambers WHERE owner_email=? AND chamber_name=?"
-    cursor.execute(select_query, (email, chamber_name))
-    chamber_id_row = cursor.fetchone()
+    find_chamber_sql = "SELECT id FROM chambers WHERE owner_email=? AND chamber_name=?"
+    curr_log.execute(find_chamber_sql, (email, chamber_name))
+    id_row = curr_log.fetchone()
     
-    if chamber_id_row:
-        c_id = chamber_id_row[0]
-        ts_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        tok_est = len(content.split())
+    if id_row:
+        target_id = id_row[0]
+        timestamp_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        word_count = len(content.split())
         
-        cursor.execute('''
+        log_insert_sql = '''
             INSERT INTO message_logs (chamber_id, sender_role, message_body, ts_created, token_count) 
             VALUES (?, ?, ?, ?, ?)
-        ''', (c_id, role, content, ts_now, tok_est))
+        '''
+        curr_log.execute(log_insert_sql, (target_id, role, content, timestamp_now, word_count))
         
         if role == "user":
-            cursor.execute("UPDATE users SET total_queries = total_queries + 1 WHERE email = ?", (email,))
+            update_user_sql = "UPDATE users SET total_queries = total_queries + 1 WHERE email = ?"
+            curr_log.execute(update_user_sql, (email,))
         
-        conn.commit()
+        conn_log.commit()
     
-    conn.close()
+    conn_log.close()
 
 def db_fetch_chamber_history(email, chamber_name):
-    """Retrieves context-specific logs."""
-    conn = sqlite3.connect(SQL_DB_FILE)
-    cursor = conn.cursor()
+    """Retrieves context-specific logs for UI rendering."""
+    conn_hist = sqlite3.connect(SQL_DB_FILE)
+    curr_hist = conn_hist.cursor()
     
-    sql_string = '''
+    fetch_sql = '''
         SELECT m.sender_role, m.message_body FROM message_logs m 
         JOIN chambers c ON m.chamber_id = c.id 
         WHERE c.owner_email=? AND c.chamber_name=? 
         ORDER BY m.id ASC
     '''
     
-    cursor.execute(sql_string, (email, chamber_name))
-    data_rows = cursor.fetchall()
+    curr_hist.execute(fetch_sql, (email, chamber_name))
+    all_rows = curr_hist.fetchall()
     
-    history_list = []
-    for row in data_rows:
-        history_list.append({"role": row[0], "content": row[1]})
+    formatted_history = []
+    for entry in all_rows:
+        dict_obj = {"role": entry[0], "content": entry[1]}
+        formatted_history.append(dict_obj)
         
-    conn.close()
-    return history_list
+    conn_hist.close()
+    return formatted_history
 
 init_leviathan_db()
 
@@ -329,85 +328,84 @@ init_leviathan_db()
 @st.cache_resource
 def get_analytical_engine():
     """Initializes Gemini with strictly tuned legal parameters."""
-    api_key_str = st.secrets["GOOGLE_API_KEY"]
-    model_instance = ChatGoogleGenerativeAI(
+    google_key = st.secrets["GOOGLE_API_KEY"]
+    ai_model = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash", 
-        google_api_key=api_key_str, 
+        google_api_key=google_key, 
         temperature=0.15,
         max_output_tokens=4000
     )
-    return model_instance
+    return ai_model
 
 def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
     """Enterprise SMTP Gateway for automated brief delivery."""
     try:
-        s_user = st.secrets["EMAIL_USER"]
-        s_pass = st.secrets["EMAIL_PASS"].replace(" ", "")
+        sender_email = st.secrets["EMAIL_USER"]
+        sender_password = st.secrets["EMAIL_PASS"].replace(" ", "")
         
-        cur_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        body_text = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
-        body_text += f"CHAMBER IDENTIFIER: {chamber_name}\n"
-        body_text += f"GENERATED AT: {cur_ts}\n"
-        body_text += "="*60 + "\n\n"
+        time_stamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        brief_body = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
+        brief_body += f"CHAMBER: {chamber_name}\n"
+        brief_body += f"GENERATED: {time_stamp}\n"
+        brief_body += "="*60 + "\n\n"
         
-        for entry in history_data:
-            role_label = "ADVOCATE" if entry['role'] == 'assistant' else "CLIENT"
-            sanitized_content = re.sub(r'[*#_]', '', entry['content'])
-            body_text += f"[{role_label}]: {sanitized_content}\n\n"
+        for item in history_data:
+            role_string = "ADVOCATE" if item['role'] == 'assistant' else "CLIENT"
+            clean_text = re.sub(r'[*#_]', '', item['content'])
+            brief_body += f"[{role_string}]: {clean_text}\n\n"
             
-        email_msg = MIMEMultipart()
-        email_msg['From'] = f"Alpha Apex Chambers <{s_user}>"
-        email_msg['To'] = target_email
-        email_msg['Subject'] = f"Case Briefing: {chamber_name}"
+        multipart_msg = MIMEMultipart()
+        multipart_msg['From'] = f"Alpha Apex Chambers <{sender_email}>"
+        multipart_msg['To'] = target_email
+        multipart_msg['Subject'] = f"Legal Consultation Summary: {chamber_name}"
         
-        part_content = MIMEText(body_text, 'plain', 'utf-8')
-        email_msg.attach(part_content)
+        text_part = MIMEText(brief_body, 'plain', 'utf-8')
+        multipart_msg.attach(text_part)
         
-        smtp_session = smtplib.SMTP('smtp.gmail.com', 587)
-        smtp_session.starttls()
-        smtp_session.login(s_user, s_pass)
-        smtp_session.send_message(email_msg)
-        smtp_session.quit()
+        smtp_conn = smtplib.SMTP('smtp.gmail.com', 587)
+        smtp_conn.starttls()
+        smtp_conn.login(sender_email, sender_password)
+        smtp_conn.send_message(multipart_msg)
+        smtp_conn.quit()
         
         return True
-    except Exception as smtp_err:
-        st.error(f"Critical SMTP Fault: {smtp_err}")
+    except Exception as error_msg:
+        st.error(f"SMTP Gateway Failure: {error_msg}")
         return False
 
 def synchronize_law_library():
     """Explicit file system scan for PDF jurisprudence indexing."""
-    db_conn = sqlite3.connect(SQL_DB_FILE)
-    db_cursor = db_conn.cursor()
+    conn_sync = sqlite3.connect(SQL_DB_FILE)
+    curr_sync = conn_sync.cursor()
     
-    db_cursor.execute("SELECT filename FROM law_assets")
-    existing_records = db_cursor.fetchall()
+    curr_sync.execute("SELECT filename FROM law_assets")
+    records = curr_sync.fetchall()
     
-    indexed_filenames = []
-    for record in existing_records:
-        indexed_filenames.append(record[0])
+    existing_files = []
+    for r in records:
+        existing_files.append(r[0])
     
     if os.path.exists(DATA_FOLDER):
-        for filename in os.listdir(DATA_FOLDER):
-            is_pdf = filename.lower().endswith(".pdf")
-            not_indexed = filename not in indexed_filenames
-            
-            if is_pdf and not_indexed:
-                file_path_full = os.path.join(DATA_FOLDER, filename)
-                try:
-                    pdf_reader_obj = PdfReader(file_path_full)
-                    size_in_kb = os.path.getsize(file_path_full) / 1024
-                    total_pages = len(pdf_reader_obj.pages)
-                    ts_sync = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        for file_name in os.listdir(DATA_FOLDER):
+            if file_name.lower().endswith(".pdf"):
+                if file_name not in existing_files:
+                    full_path = os.path.join(DATA_FOLDER, file_name)
+                    try:
+                        pdf_obj = PdfReader(full_path)
+                        f_kb = os.path.getsize(full_path) / 1024
+                        f_pgs = len(pdf_obj.pages)
+                        f_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+                        
+                        insert_asset_sql = '''
+                            INSERT INTO law_assets (filename, filesize_kb, page_count, sync_timestamp) 
+                            VALUES (?, ?, ?, ?)
+                        '''
+                        curr_sync.execute(insert_asset_sql, (file_name, f_kb, f_pgs, f_ts))
+                    except Exception:
+                        continue
                     
-                    db_cursor.execute('''
-                        INSERT INTO law_assets (filename, filesize_kb, page_count, sync_timestamp) 
-                        VALUES (?, ?, ?, ?)
-                    ''', (filename, size_in_kb, total_pages, ts_sync))
-                except Exception as file_err:
-                    continue
-                    
-    db_conn.commit()
-    db_conn.close()
+    conn_sync.commit()
+    conn_sync.close()
 
 # ==============================================================================
 # 4. UI: SOVEREIGN CHAMBERS (VOICE RECORDING ENABLED)
@@ -415,7 +413,7 @@ def synchronize_law_library():
 
 def render_chamber_workstation():
     """Main Workstation UI with non-condensed logic blocks."""
-    lexicon_map = {
+    language_dict = {
         "English": "en-US", 
         "Urdu": "ur-PK", 
         "Sindhi": "sd-PK", 
@@ -427,68 +425,66 @@ def render_chamber_workstation():
     with st.sidebar:
         st.markdown("<h1 style='text-align: center; margin-top: -30px;'>⚖️</h1>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center;'>ALPHA APEX</h3>", unsafe_allow_html=True)
-        st.caption("<p style='text-align: center;'>Leviathan Production Suite v29</p>", unsafe_allow_html=True)
+        st.caption("<p style='text-align: center;'>Leviathan Production Suite v30</p>", unsafe_allow_html=True)
         
         st.divider()
         st.subheader("🌐 Global Lexicon")
-        language_selection = st.selectbox("Select Consultation Language", list(lexicon_map.keys()))
-        language_code = lexicon_map[language_selection]
+        lang_choice = st.selectbox("Select Language", list(language_dict.keys()))
+        lang_code = language_dict[lang_choice]
         
         st.divider()
         st.subheader("📁 Case Navigator")
-        search_query_term = st.text_input("🔍 Search Chambers", "").lower()
+        search_val = st.text_input("🔍 Search Chambers", "").lower()
         
-        user_email_id = st.session_state.user_email
-        db_connection_sb = sqlite3.connect(SQL_DB_FILE)
-        db_cursor_sb = db_connection_sb.cursor()
+        active_email = st.session_state.user_email
+        conn_sb = sqlite3.connect(SQL_DB_FILE)
+        curr_sb = conn_sb.cursor()
         
-        chamber_query_sql = "SELECT chamber_name FROM chambers WHERE owner_email=? AND is_archived=0"
-        db_cursor_sb.execute(chamber_query_sql, (user_email_id,))
-        chamber_data_rows = db_cursor_sb.fetchall()
+        list_sql = "SELECT chamber_name FROM chambers WHERE owner_email=? AND is_archived=0"
+        curr_sb.execute(list_sql, (active_email,))
+        chamber_rows = curr_sb.fetchall()
         
-        chamber_name_list = []
-        for row in chamber_data_rows:
-            chamber_name_list.append(row[0])
+        master_chamber_list = []
+        for c_row in chamber_rows:
+            master_chamber_list.append(c_row[0])
             
-        db_connection_sb.close()
+        conn_sb.close()
         
-        filtered_chambers = []
-        for c_name in chamber_name_list:
-            if search_query_term in c_name.lower():
-                filtered_chambers.append(c_name)
+        results_list = []
+        for name in master_chamber_list:
+            if search_val in name.lower():
+                results_list.append(name)
         
-        if len(filtered_chambers) > 0:
-            st.session_state.current_chamber = st.selectbox("Active Chamber", filtered_chambers)
+        if len(results_list) > 0:
+            st.session_state.current_chamber = st.selectbox("Active Chamber", results_list)
         else:
-            st.session_state.current_chamber = st.selectbox("Active Chamber", chamber_name_list)
+            st.session_state.current_chamber = st.selectbox("Active Chamber", master_chamber_list)
         
-        # Action Buttons Columnar Layout
-        btn_col_1, btn_col_2 = st.columns(2)
-        with btn_col_1:
+        c1, c2 = st.columns(2)
+        with c1:
             if st.button("➕ New Case"):
-                st.session_state.trigger_new_case_workflow = True
-        with btn_col_2:
+                st.session_state.new_case_trigger = True
+        with c2:
             if st.button("📧 Brief"):
-                hist_to_send = db_fetch_chamber_history(user_email_id, st.session_state.current_chamber)
-                success_mail = dispatch_legal_brief_smtp(user_email_id, st.session_state.current_chamber, hist_to_send)
-                if success_mail:
-                    st.sidebar.success("Brief Dispatched")
+                mail_history = db_fetch_chamber_history(active_email, st.session_state.current_chamber)
+                if dispatch_legal_brief_smtp(active_email, st.session_state.current_chamber, mail_history):
+                    st.sidebar.success("Dispatched")
         
-        if st.session_state.get('trigger_new_case_workflow'):
-            input_new_name = st.text_input("New Chamber Identifier")
-            if st.button("Register Case") and input_new_name:
-                conn_new = sqlite3.connect(SQL_DB_FILE)
-                curr_new = conn_new.cursor()
-                curr_date_str = str(datetime.date.today())
-                curr_new.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?, ?, ?)", 
-                                 (user_email_id, input_new_name, curr_date_str))
-                conn_new.commit()
-                conn_new.close()
-                st.session_state.trigger_new_case_workflow = False
+        if st.session_state.get('new_case_trigger'):
+            case_input_field = st.text_input("Case Identifier")
+            if st.button("Register") and case_input_field:
+                conn_add = sqlite3.connect(SQL_DB_FILE)
+                curr_add = conn_add.cursor()
+                date_stamp = str(datetime.date.today())
+                curr_add.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?, ?, ?)", 
+                                 (active_email, case_input_field, date_stamp))
+                conn_add.commit()
+                conn_add.close()
+                st.session_state.new_case_trigger = False
                 st.rerun()
 
         st.divider()
-        if st.button("🚪 Terminate Session"):
+        if st.button("🚪 Terminate"):
             st.session_state.logged_in = False
             st.session_state.user_email = None
             st.session_state.username = None
@@ -498,74 +494,52 @@ def render_chamber_workstation():
     st.header(f"💼 CASE: {st.session_state.current_chamber}")
     st.write("---")
     
-    active_history = db_fetch_chamber_history(st.session_state.user_email, st.session_state.current_chamber)
-    for entry_log in active_history:
-        role_type = entry_log["role"]
-        body_content = entry_log["content"]
-        with st.chat_message(role_type):
-            st.write(body_content)
+    current_logs = db_fetch_chamber_history(st.session_state.user_email, st.session_state.current_chamber)
+    for log_entry in current_logs:
+        with st.chat_message(log_entry["role"]):
+            st.write(log_entry["content"])
 
     st.write("") 
     
-    # Input Processing Subsystem
-    layout_columns = st.columns([0.82, 0.18])
-    with layout_columns[0]:
-        user_text_prompt = st.chat_input("Enter Legal Query or Strategy Request...")
-    with layout_columns[1]:
-        # Speech Capture Integration
-        user_voice_prompt = speech_to_text(
-            language=language_code, 
-            key='leviathan_voice_capture', 
-            just_once=True, 
-            use_container_width=True
-        )
+    col_chat, col_mic = st.columns([0.82, 0.18])
+    with col_chat:
+        user_text = st.chat_input("Enter Legal Query...")
+    with col_mic:
+        user_voice = speech_to_text(language=lang_code, key='apex_mic', just_once=True, use_container_width=True)
 
-    # Input Conflict Resolution Logic
-    if user_text_prompt:
-        consolidated_input = user_text_prompt
-    elif user_voice_prompt:
-        consolidated_input = user_voice_prompt
-    else:
-        consolidated_input = None
+    final_query = None
+    if user_text:
+        final_query = user_text
+    elif user_voice:
+        final_query = user_voice
 
-    if consolidated_input:
-        is_duplicate = False
-        if "last_processed_query" in st.session_state:
-            if st.session_state.last_processed_query == consolidated_input:
-                is_duplicate = True
-        
-        if not is_duplicate:
-            st.session_state.last_processed_query = consolidated_input
-            
-            db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "user", consolidated_input)
+    if final_query:
+        if "last_processed" not in st.session_state or st.session_state.last_processed != final_query:
+            st.session_state.last_processed = final_query
+            db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "user", final_query)
             
             with st.chat_message("user"):
-                st.write(consolidated_input)
+                st.write(final_query)
             
             with st.chat_message("assistant"):
-                with st.spinner("Processing Jurisprudential Logic..."):
+                with st.spinner("Analyzing Case..."):
                     try:
-                        prompt_template = f"""
-                        SYSTEM PERSONA: Senior High Court Advocate.
-                        CONSTRAINTS: 
-                        1. If input is a greeting, respond with professional legal courtesy.
-                        2. If input is a case/legal issue, provide IRAC analysis.
-                        3. Cite Pakistan Penal Code or Constitution where relevant.
-                        4. Output Language must be: {language_selection}.
-                        
-                        USER INPUT: {consolidated_input}
+                        prompt_config = f"""
+                        PERSONA: High Court Advocate.
+                        LOGIC: Greeting if simple, IRAC if complex legal problem.
+                        CITATIONS: Refer to PPC/CrPC/Constitution.
+                        LANG: {lang_choice}.
+                        QUERY: {final_query}
                         """
+                        ai_engine = get_analytical_engine()
+                        ai_response_obj = ai_engine.invoke(prompt_config)
+                        ai_text_result = ai_response_obj.content
                         
-                        engine = get_analytical_engine()
-                        ai_raw_output = engine.invoke(prompt_template)
-                        final_ai_text = ai_raw_output.content
-                        
-                        st.markdown(final_ai_text)
-                        
-                        db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "assistant", final_ai_text)
+                        st.markdown(ai_text_result)
+                        db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "assistant", ai_text_result)
                         st.rerun()
-                    except Exception as ai_err:
-                        st.error(f"Inference Engine Error: {ai_err}")
+                    except Exception as e:
+                        st.error(f"AI Failure: {e}")
 
 # ==============================================================================
 # 5. UI: SOVEREIGN PORTAL (AUTHENTICATION GATEWAY)
@@ -577,104 +551,84 @@ def render_sovereign_portal():
     st.title("⚖️ ALPHA APEX LEVIATHAN PORTAL")
     st.markdown("#### Enterprise Legal Intelligence Infrastructure")
     
-    tab_login, tab_register = st.tabs(["🔐 Authorized Login", "📝 System Registration"])
+    t_login, t_reg = st.tabs(["🔐 Login", "📝 Register"])
     
-    with tab_login:
+    with t_login:
         st.subheader("Credential Verification")
-        input_email = st.text_input("Vault Identity (Email)")
-        input_pass = st.text_input("Security Key", type="password")
-        
-        if st.button("Authenticate & Enter"):
-            auth_name = db_verify_vault_access(input_email, input_pass)
-            if auth_name:
+        u_email = st.text_input("Vault Email")
+        u_key = st.text_input("Vault Key", type="password")
+        if st.button("Enter"):
+            u_name = db_verify_vault_access(u_email, u_key)
+            if u_name:
                 st.session_state.logged_in = True
-                st.session_state.user_email = input_email
-                st.session_state.username = auth_name
+                st.session_state.user_email = u_email
+                st.session_state.username = u_name
                 st.rerun()
             else:
-                st.error("Authentication Failure: Invalid Identity or Key.")
+                st.error("Denied.")
                 
-    with tab_register:
-        st.subheader("New Identity Initialization")
-        reg_email = st.text_input("Account Email Address")
-        reg_name = st.text_input("Full Professional Name")
-        reg_key = st.text_input("Establish Security Key", type="password")
-        
-        if st.button("Execute Registration"):
-            creation_success = db_create_vault_user(reg_email, reg_name, reg_key)
-            if creation_success:
-                st.success("Identity Established. You may now proceed to Login.")
+    with t_reg:
+        st.subheader("New Identity")
+        n_email = st.text_input("New Email")
+        n_name = st.text_input("Full Name")
+        n_key = st.text_input("Set Key", type="password")
+        if st.button("Initialize"):
+            if db_create_vault_user(n_email, n_name, n_key):
+                st.success("Created.")
             else:
-                st.error("Registration Fault: Identity already exists or Database Error.")
+                st.error("Error.")
 
 # ==============================================================================
 # 6. MASTER EXECUTION ENGINE & ADMIN TELEMETRY
 # ==============================================================================
 
-# Session State Initialization
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if st.session_state.logged_in == False:
     render_sovereign_portal()
 else:
-    # Navigation Router
-    nav_selection = st.sidebar.radio("Sovereign Navigation Hub", ["Chambers", "Law Library", "System Admin"])
+    nav_pick = st.sidebar.radio("Sovereign Navigation Hub", ["Chambers", "Law Library", "System Admin"])
     
-    if nav_selection == "Chambers":
+    if nav_pick == "Chambers":
         render_chamber_workstation()
-        
-    elif nav_selection == "Law Library":
+    elif nav_pick == "Law Library":
         apply_leviathan_shaders()
-        st.header("📚 Digital Jurisprudence Assets")
-        
-        if st.button("🔄 Execute Vault Sync"):
+        st.header("📚 Law Library")
+        if st.button("🔄 Sync"):
             synchronize_law_library()
             st.rerun()
         
         conn_lib = sqlite3.connect(SQL_DB_FILE)
-        asset_df = pd.read_sql_query("SELECT filename, filesize_kb, page_count, sync_timestamp FROM law_assets", conn_lib)
+        df_lib = pd.read_sql_query("SELECT filename, filesize_kb, page_count, sync_timestamp FROM law_assets", conn_lib)
         conn_lib.close()
-        
-        if asset_df.empty:
-            st.warning("Digital Vault is currently empty. Please upload assets to the library folder.")
-        else:
-            st.dataframe(asset_df, use_container_width=True)
+        st.dataframe(df_lib, use_container_width=True)
             
-    elif nav_selection == "System Admin":
+    elif nav_pick == "System Admin":
         apply_leviathan_shaders()
-        st.header("🛡️ System Administration Console")
-        
+        st.header("🛡️ System Telemetry")
         conn_adm = sqlite3.connect(SQL_DB_FILE)
-        user_data_df = pd.read_sql_query("SELECT full_name, email, registration_date, total_queries FROM users", conn_adm)
-        chamber_data_df = pd.read_sql_query("SELECT owner_email, chamber_name, case_status, init_date FROM chambers", conn_adm)
-        telemetry_df = pd.read_sql_query("SELECT user_email, event_type, description, event_timestamp FROM system_telemetry ORDER BY event_id DESC LIMIT 10", conn_adm)
+        df_u = pd.read_sql_query("SELECT full_name, email, registration_date, total_queries FROM users", conn_adm)
+        df_t = pd.read_sql_query("SELECT user_email, event_type, description, event_timestamp FROM system_telemetry ORDER BY event_id DESC LIMIT 15", conn_adm)
         conn_adm.close()
         
-        # Admin Metrics View
-        col_adm_1, col_adm_2 = st.columns(2)
-        with col_adm_1:
-            st.subheader("Registered Counsel")
-            st.dataframe(user_data_df, hide_index=True)
-        with col_adm_2:
-            st.subheader("Active Chambers")
-            st.dataframe(chamber_data_df, hide_index=True)
-            
+        st.subheader("Counsel Registry")
+        st.dataframe(df_u, use_container_width=True)
         st.divider()
-        st.subheader("Recent System Telemetry")
-        st.table(telemetry_df)
+        st.subheader("Event Log")
+        st.table(df_t)
         
         st.divider()
         st.subheader("Architectural Board")
-        architects_list = [
-            {"Name": "Saim Ahmed", "Responsibility": "Logic & System Architecture"},
-            {"Name": "Huzaifa Khan", "Responsibility": "Analytical AI Model Tuning"},
-            {"Name": "Mustafa Khan", "Responsibility": "Relational Data Persistence"},
-            {"Name": "Ibrahim Sohail", "Responsibility": "UI/UX & Shader Development"},
-            {"Name": "Daniyal Faraz", "Responsibility": "Quality Assurance & Telemetry"}
+        arch_list = [
+            {"Name": "Saim Ahmed", "Focus": "System Arch"},
+            {"Name": "Huzaifa Khan", "Focus": "AI Model"},
+            {"Name": "Mustafa Khan", "Focus": "Persistence"},
+            {"Name": "Ibrahim Sohail", "Focus": "UI/UX"},
+            {"Name": "Daniyal Faraz", "Focus": "QA"}
         ]
-        st.table(architects_list)
+        st.table(arch_list)
 
 # ==============================================================================
-# SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
+# SCRIPT END - TOTAL PRODUCTION LINE COUNT EXCEEDS 520
 # ==============================================================================
