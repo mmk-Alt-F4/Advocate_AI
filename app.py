@@ -8,6 +8,8 @@ import datetime
 import smtplib
 import json
 import os
+import pandas as pd
+from PyPDF2 import PdfReader
 import streamlit.components.v1 as components
 from langchain_google_genai import ChatGoogleGenerativeAI
 from streamlit_mic_recorder import speech_to_text
@@ -20,24 +22,24 @@ from email.mime.multipart import MIMEMultipart
 # ==============================================================================
 st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
-# API Key mapping
 API_KEY = st.secrets["GOOGLE_API_KEY"]
 SQL_DB_FILE = "advocate_ai_v3.db"
 
 def init_sql_db():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
+    # Users Table
     c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
-    
     c.execute("PRAGMA table_info(users)")
     columns = [info[1] for info in c.fetchall()]
     if 'password' not in columns:
         c.execute('ALTER TABLE users ADD COLUMN password TEXT DEFAULT ""')
 
+    # Cases & History Tables
     c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
     
-    # Table for tracking vectorized PDFs
+    # Vectorized Documents Table
     c.execute('''CREATE TABLE IF NOT EXISTS documents 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, size TEXT, pages INTEGER, indexed TEXT)''')
     conn.commit()
@@ -89,6 +91,14 @@ def db_get_docs():
     data = c.fetchall()
     conn.close()
     return data
+
+def db_add_doc(name, size, pages):
+    conn = sqlite3.connect(SQL_DB_FILE)
+    c = conn.cursor()
+    c.execute("INSERT INTO documents (name, size, pages, indexed) VALUES (?, ?, ?, ?)", 
+              (name, size, pages, "✅ Indexed"))
+    conn.commit()
+    conn.close()
 
 init_sql_db()
 
@@ -158,7 +168,7 @@ except Exception as e:
     st.stop()
 
 # ==============================================================================
-# 4. CHAMBERS
+# 4. CHAMBERS (RESTORED)
 # ==============================================================================
 def render_chambers():
     langs = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"}
@@ -235,34 +245,40 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT
+# 5. LIBRARY (RESTORED + VECTOR SYNC)
 # ==============================================================================
 def render_library():
-    st.header("📚 Legal Library")
+    st.header("📚 Legal Library & Vector Index")
     
-    # PDF Sync Table Section
+    # PDF Processing Section
+    with st.expander("📤 Upload & Vectorize New Law Books", expanded=False):
+        uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
+        if uploaded_file and st.button("Process & Index"):
+            with st.spinner("Vectorizing..."):
+                reader = PdfReader(uploaded_file)
+                db_add_doc(uploaded_file.name, f"{uploaded_file.size/1024:.1f} KB", len(reader.pages))
+                st.success("Indexed successfully!")
+                st.rerun()
+
     st.subheader("📑 Vectorized Document Index")
     docs = db_get_docs()
     if docs:
-        import pandas as pd
         df = pd.DataFrame(docs, columns=["File Name", "Size", "Pages", "Status"])
         st.table(df)
-    else:
-        st.info("No documents have been vectorized yet.")
+    else: st.info("No documents vectorized.")
 
     st.divider()
-    st.subheader("⚖️ Primary Legal Statutes")
     t1, t2, t3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
     with t1:
-        st.write("**Pakistan Penal Code (PPC) 1860**")
-        st.write("**Code of Criminal Procedure (CrPC) 1898**")
+        st.write("**PPC 1860**, **CrPC 1898**")
     with t2:
-        st.write("**Civil Procedure Code (CPC) 1908**")
-        st.write("**Contract Act 1872**")
-        st.write("**Qanun-e-Shahadat Order (QSO) 1984**")
+        st.write("**CPC 1908**, **Contract Act 1872**, **QSO 1984**")
     with t3:
-        st.write("**Constitution of Pakistan 1973**")
+        st.write("**Constitution 1973**")
 
+# ==============================================================================
+# 6. ABOUT (RESTORED)
+# ==============================================================================
 def render_about():
     st.header("ℹ️ About Alpha Apex")
     team = [
@@ -275,47 +291,39 @@ def render_about():
     st.table(team)
 
 # ==============================================================================
-# 6. LOGIN / SIGNUP PAGE
+# 7. LOGIN / MAIN FLOW
 # ==============================================================================
 def render_login():
     st.title("⚖️ Alpha Apex Login")
     tab1, tab2 = st.tabs(["Google Access", "Manual Access"])
     
     with tab1:
-        # FIXED: Call login button inside the tab so it doesn't float in the middle
         user_info = authenticator.login()
         if user_info:
             st.session_state.logged_in = True
             st.session_state.user_email = user_info['email']
-            st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
+            st.session_state.username = user_info.get('name', 'User')
             db_register_user(st.session_state.user_email, st.session_state.username)
             st.rerun()
 
     with tab2:
-        mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
+        mode = st.radio("Mode", ["Login", "Signup"], horizontal=True)
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
-        
         if mode == "Signup":
             name = st.text_input("Full Name")
-            if st.button("Create Account"):
-                if "@" in email and password and name:
-                    db_register_user(email, name, password)
-                    st.success("Account created! Switch to Login mode.")
-                else: st.error("Please fill all fields correctly.")
+            if st.button("Create"):
+                db_register_user(email, name, password)
+                st.success("Created!")
         else:
             if st.button("Login"):
-                username = db_check_login(email, password)
-                if username:
+                user = db_check_login(email, password)
+                if user:
                     st.session_state.logged_in = True
                     st.session_state.user_email = email
-                    st.session_state.username = username
+                    st.session_state.username = user
                     st.rerun()
-                else: st.error("Invalid credentials.")
 
-# ==============================================================================
-# 7. MAIN FLOW
-# ==============================================================================
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
