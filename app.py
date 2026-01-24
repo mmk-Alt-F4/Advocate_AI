@@ -140,7 +140,7 @@ def play_voice_js(text, lang_code):
     components.html(js_code, height=0)
 
 # ==============================================================================
-# 3. GOOGLE OAUTH CONFIG & LOGIN HANDLER (FIXED)
+# 3. GOOGLE OAUTH CONFIG
 # ==============================================================================
 try:
     auth_config = dict(st.secrets["google_auth"])
@@ -156,15 +156,6 @@ try:
 except Exception as e:
     st.error(f"OAuth Config Missing: {e}")
     st.stop()
-
-# This handles the redirect and session state automatically
-user_info = authenticator.login()
-
-if user_info:
-    st.session_state.logged_in = True
-    st.session_state.user_email = user_info['email']
-    st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
-    db_register_user(st.session_state.user_email, st.session_state.username)
 
 # ==============================================================================
 # 4. CHAMBERS
@@ -244,7 +235,7 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT (WITH SYNCED PDF TABLE)
+# 5. LIBRARY & ABOUT
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library")
@@ -291,9 +282,14 @@ def render_login():
     tab1, tab2 = st.tabs(["Google Access", "Manual Access"])
     
     with tab1:
-        # The login button is automatically handled by the top-level authenticator.login()
-        # If not logged in, it shows the "Sign in with Google" button by default.
-        st.write("Please use the Google Sign-In button above or below to continue.")
+        # FIXED: Call login button inside the tab so it doesn't float in the middle
+        user_info = authenticator.login()
+        if user_info:
+            st.session_state.logged_in = True
+            st.session_state.user_email = user_info['email']
+            st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
+            db_register_user(st.session_state.user_email, st.session_state.username)
+            st.rerun()
 
     with tab2:
         mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
