@@ -154,7 +154,7 @@ def apply_leviathan_shaders(theme_mode):
 # ==============================================================================
 
 SQL_DB_FILE = "alpha_apex_leviathan_master_v25.db"
-DATA_FOLDER = "law_library_assets"
+DATA_FOLDER = "data"
 
 if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
@@ -544,3 +544,4 @@ else:
 # ==============================================================================
 # END OF SYSTEM SCRIPT - VERBOSE SOVEREIGN PRODUCTION EDITION
 # ==============================================================================
+
