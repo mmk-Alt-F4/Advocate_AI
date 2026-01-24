@@ -393,7 +393,25 @@ def render_chambers_page():
                     docs = st.session_state.law_db.as_retriever(search_kwargs={"k": 4}).invoke(final_in)
                     ctx = "\n\n".join([d.page_content for d in docs])
                 
-                prompt = f"Senior Legal Expert (Pakistan Law). Context: {ctx}\n\nUser Query: {final_in}\n\nRespond ONLY in {target_lang} language/script."
+                # UPDATED PROMPT: IRAC Style + Role + Greeting Handling
+                prompt = f"""
+                Role: You are Alpha Apex, a distinguished Senior Advocate of the High Court in Pakistan.
+                
+                Instructions:
+                1. GREETINGS: If the user input is a greeting (e.g., "Salam", "Hello", "Hi"), accept it warmly and professionally in {target_lang}. Briefly introduce yourself and ask for the legal facts. Do NOT use IRAC for simple greetings.
+                2. LEGAL QUERIES: For any legal question or fact pattern, you MUST output your response in strict IRAC format:
+                   - **Issue**: Clearly state the legal question at hand.
+                   - **Rule**: Cite specific sections of the Pakistan Penal Code, CrPC, Constitution, or Case Law provided in the 'Context' below.
+                   - **Analysis**: Apply the legal rules to the specific facts provided by the user.
+                   - **Conclusion**: Provide a concise legal opinion or recommended course of action.
+                
+                Constraints:
+                - Use ONLY the provided Context if relevant.
+                - Respond strictly in the {target_lang} language/script.
+                
+                Context: {ctx}
+                User Query: {final_in}
+                """
                 
                 try:
                     ai_out = ai_engine.invoke(prompt).content
