@@ -130,7 +130,7 @@ def apply_leviathan_shaders():
 # ==============================================================================
 
 SQL_DB_FILE = "alpha_apex_leviathan_master_v30.db"
-DATA_FOLDER = "law_library_assets"
+DATA_FOLDER = "data"
 
 if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
@@ -632,3 +632,4 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL PRODUCTION LINE COUNT EXCEEDS 520
 # ==============================================================================
+
