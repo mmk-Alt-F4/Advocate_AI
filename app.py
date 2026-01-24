@@ -234,11 +234,33 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT
+# 5. LIBRARY & ABOUT (LEGAL STATUTES UPDATED)
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library")
-    st.info("Direct access to Pakistan Penal Code (PPC) and Constitutional Amendments.")
+    st.info("Direct access to Pakistan's Primary Legal Statutes.")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("🇵🇰 Statutes & Codes")
+        st.markdown("""
+        * **Pakistan Penal Code (PPC):** The core document defining crimes and punishments.
+        * **Code of Criminal Procedure (CrPC):** Procedures for criminal law enforcement.
+        * **Civil Procedure Code (CPC):** The framework for civil litigation.
+        * **Qanun-e-Shahadat Order (QSO):** The law of evidence in Pakistan.
+        """)
+        
+    with col2:
+        st.subheader("📜 Constitutional Documents")
+        st.markdown("""
+        * **Constitution of 1973:** The supreme law of Pakistan.
+        * **Amendments:** Track the 1st through 26th Amendments.
+        * **Fundamental Rights:** Article 8 to 28 details.
+        """)
+
+    st.divider()
+    st.write("🔍 *Note: Use the Chambers AI to search specific clauses within these statutes.*")
 
 def render_about():
     st.header("ℹ️ About Alpha Apex")
