@@ -20,7 +20,7 @@ from email.mime.multipart import MIMEMultipart
 # ==============================================================================
 st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
-# Corrected Secret Key per instructions
+# API Key mapping
 API_KEY = st.secrets["GOOGLE_API_KEY"]
 SQL_DB_FILE = "advocate_ai_v3.db"
 
@@ -29,7 +29,6 @@ def init_sql_db():
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
     
-    # Ensure password column exists for manual signup support
     c.execute("PRAGMA table_info(users)")
     columns = [info[1] for info in c.fetchall()]
     if 'password' not in columns:
@@ -129,7 +128,7 @@ def play_voice_js(text, lang_code):
     components.html(js_code, height=0)
 
 # ==============================================================================
-# 3. GOOGLE OAUTH CONFIG (FIXED METHOD)
+# 3. GOOGLE OAUTH CONFIG
 # ==============================================================================
 try:
     auth_config = dict(st.secrets["google_auth"])
@@ -146,6 +145,7 @@ except Exception as e:
     st.error(f"OAuth Config Missing: {e}")
     st.stop()
 
+# Handle authentication
 user_info = authenticator.login()
 
 if user_info:
@@ -232,39 +232,22 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT (LEGAL STATUTES INCLUDED)
+# 5. LIBRARY & ABOUT
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library")
-    st.info("Direct access to Pakistan's Primary Legal Statutes.")
+    st.info("Pakistan's Primary Legal Statutes.")
     
-    tab1, tab2, tab3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
-    
-    with tab1:
-        st.subheader("Criminal Codes")
-        st.markdown("""
-        - **Pakistan Penal Code (PPC) 1860**: Covers all criminal offenses from Section 1 to 511.
-        - **Code of Criminal Procedure (CrPC) 1898**: Details the procedure for arrests, trials, and appeals.
-        - **Anti-Terrorism Act (ATA) 1997**: Special laws for heinous crimes.
-        """)
-        
-    with tab2:
-        st.subheader("Civil Codes & Procedure")
-        st.markdown("""
-        - **Civil Procedure Code (CPC) 1908**: The backbone of civil litigation.
-        - **Contract Act 1872**: Rules for agreements and obligations.
-        - **Transfer of Property Act (TPA) 1882**: Laws governing the sale and mortgage of property.
-        - **Qanun-e-Shahadat Order (QSO) 1984**: The Law of Evidence in Pakistan.
-        """)
-
-    with tab3:
-        st.subheader("Supreme Law")
-        st.markdown("""
-        - **Constitution of Pakistan 1973**: 
-            - *Part II*: Fundamental Rights (Articles 8-28).
-            - *Part VII*: The Judicature (Supreme Court & High Courts).
-            - *26th Amendment*: Recent changes to the judicial appointment process.
-        """)
+    t1, t2, t3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
+    with t1:
+        st.write("**Pakistan Penal Code (PPC) 1860**")
+        st.write("**Code of Criminal Procedure (CrPC) 1898**")
+    with t2:
+        st.write("**Civil Procedure Code (CPC) 1908**")
+        st.write("**Contract Act 1872**")
+        st.write("**Qanun-e-Shahadat Order (QSO) 1984**")
+    with t3:
+        st.write("**Constitution of Pakistan 1973**")
 
 def render_about():
     st.header("ℹ️ About Alpha Apex")
@@ -285,10 +268,7 @@ def render_login():
     tab1, tab2 = st.tabs(["Google Login", "Manual Access"])
     
     with tab1:
-        # The login button is rendered automatically via the login() call above
-        # But we can provide a link if the user hasn't interacted yet
-        auth_url = authenticator.get_authorization_url()
-        st.link_button("Login with Google", auth_url)
+        st.info("The Google Login button will appear if authentication is not active.")
 
     with tab2:
         mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
@@ -324,4 +304,3 @@ else:
     if page == "Chambers": render_chambers()
     elif page == "Legal Library": render_library()
     else: render_about()
-
