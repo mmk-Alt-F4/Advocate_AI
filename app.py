@@ -247,7 +247,7 @@ def get_analytical_engine():
     """Initializes Gemini with strictly tuned legal parameters."""
     api_key_vault = st.secrets["GOOGLE_API_KEY"]
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash", 
+        model="gemini-2.0-flash", 
         google_api_key=api_key_vault, 
         temperature=0.2,
         max_output_tokens=4000
@@ -276,21 +276,26 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         smtp_sender = st.secrets["EMAIL_USER"]
         smtp_pass = st.secrets["EMAIL_PASS"].replace(" ", "")
         
+        # Construct the email body text
         email_content = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
         email_content += f"CHAMBER: {chamber_name}\n"
-        email_content += f"GENERATED ON: {datetime.datetime.now()}\n"
+        email_content += f"GENERATED ON: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
         email_content += "-"*50 + "\n\n"
         
         for entry in history_data:
             speaker = "ADVOCATE" if entry['role'] == 'assistant' else "CLIENT"
+            # Clean text for email compatibility
             clean_body = re.sub(r'[*#_]', '', entry['content'])
             email_content += f"[{speaker}]: {clean_body}\n\n"
             
+        # Create MIME container
         msg = MIMEMultipart()
         msg['From'] = f"Alpha Apex Chambers <{smtp_sender}>"
         msg['To'] = target_email
         msg['Subject'] = f"Legal Consult Brief: {chamber_name}"
-        msg.attach(MIMEText(email_content, 'plain'))
+        
+        # Attach text with UTF-8 encoding to ensure content is sent
+        msg.attach(MIMEText(email_content, 'plain', 'utf-8'))
         
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
