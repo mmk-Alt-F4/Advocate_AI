@@ -1,6 +1,6 @@
 # ==============================================================================
-# ALPHA APEX - OMNIPOTENCE ENTERPRISE LEGAL INTELLIGENCE SYSTEM
-# VERSION: 21.0 (MAXIMUM VERBOSITY - SOVEREIGN PRODUCTION)
+# ALPHA APEX - SOVEREIGN ENTERPRISE LEGAL INTELLIGENCE SYSTEM
+# VERSION: 22.0 (LOCAL VAULT EDITION - NO OAUTH)
 # ARCHITECTS: SAIM AHMED, HUZAIFA KHAN, MUSTAFA KHAN, IBRAHIM SOHAIL, DANIYAL FARAZ
 # ==============================================================================
 
@@ -15,468 +15,388 @@ import smtplib
 import json
 import os
 import time
-import base64
 import pandas as pd
 from PyPDF2 import PdfReader
 import streamlit.components.v1 as components
 from langchain_google_genai import ChatGoogleGenerativeAI
 from streamlit_mic_recorder import speech_to_text
-from streamlit_google_auth import Authenticate
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
 
 # ==============================================================================
-# 1. THEME ENGINE & ADVANCED SHADER ARCHITECTURE (GLOBAL SCOPE)
+# 1. UI ENGINE & ADVANCED SHADER ARCHITECTURE
 # ==============================================================================
 st.set_page_config(
-    page_title="Alpha Apex - Omnipotence Law AI", 
+    page_title="Alpha Apex - Sovereign Law AI", 
     page_icon="⚖️", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-def apply_omnipotence_shaders(theme_mode):
+def apply_sovereign_shaders(theme_mode):
     """
-    Injects a high-fidelity CSS architecture into the Streamlit DOM.
-    Includes glassmorphism effects, neural transitions, and layout overrides.
+    Restores the heavy-duty CSS architecture.
+    Handles transitions, chat bubble geometry, and sidebar glassmorphism.
     """
     shader_css = """
     <style>
-        /* Global Animation Layer - Cinematic Transitions */
-        * { transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.8s ease !important; }
-        .stApp { transition: background 0.8s ease !important; }
+        /* Global Cinematic Transitions */
+        * { transition: background-color 0.7s cubic-bezier(0.4, 0, 0.2, 1), color 0.7s ease !important; }
+        .stApp { transition: background 0.7s ease !important; }
         
-        /* Glassmorphism Sidebar */
-        [data-testid="stSidebar"] {
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
-
         /* High-Fidelity Chat Geometry */
         .stChatMessage {
-            border-radius: 24px !important;
-            padding: 2rem !important;
-            margin-bottom: 1.5rem !important;
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
-            animation: slideUpFade 0.6s ease-out;
+            border-radius: 22px !important;
+            padding: 1.8rem !important;
+            margin-bottom: 1.3rem !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12) !important;
+            animation: slideIn 0.5s ease-out;
             border: 1px solid rgba(128,128,128,0.1) !important;
         }
 
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(20px); }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* Precision Button Styling */
+        /* Button & Input Polish */
         .stButton>button {
-            border-radius: 14px !important;
-            font-weight: 800 !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
             text-transform: uppercase !important;
-            letter-spacing: 1.5px !important;
-            background: linear-gradient(45deg, #1e293b, #334155) !important;
+            letter-spacing: 1.2px !important;
+            background: linear-gradient(45deg, #2c3e50, #4ca1af) !important;
             color: white !important;
-            border: none !important;
-            height: 3rem !important;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            transition: all 0.3s ease !important;
         }
         
         .stButton>button:hover {
-            transform: translateY(-3px) scale(1.02) !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
-            background: linear-gradient(45deg, #334155, #475569) !important;
+            transform: scale(1.02) !important;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
         }
 
-        /* Fixed Footer/Input Area Spacing */
-        .stChatInputContainer {
-            padding-bottom: 20px !important;
+        /* Sidebar Geometry */
+        [data-testid="stSidebar"] {
+            border-right: 1px solid rgba(128,128,128,0.2) !important;
+            padding-top: 2rem !important;
         }
 
-        /* Scrollbar Aesthetics */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        /* Input Container Alignment */
+        .stTextInput>div>div>input {
+            border-radius: 10px !important;
+        }
     </style>
     """
     if theme_mode == "Dark Mode":
         shader_css += """
         <style>
-            .stApp { background: radial-gradient(circle at top left, #0f172a, #020617) !important; color: #f1f5f9 !important; }
-            .stChatMessage { background: rgba(30, 41, 59, 0.7) !important; backdrop-filter: blur(10px); }
-            .stTextInput>div>div>input { background-color: #0f172a !important; color: #f8fafc !important; border: 1px solid #334155 !important; }
-            h1, h2, h3 { color: #38bdf8 !important; text-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+            .stApp { background: linear-gradient(135deg, #0f172a 0%, #020617 100%) !important; color: #f1f5f9 !important; }
+            .stChatMessage { background: #1e293b !important; }
+            .stTextInput>div>div>input { background-color: #0f172a !important; color: white !important; }
+            h1, h2, h3 { color: #38bdf8 !important; }
         </style>
         """
     else:
         shader_css += """
         <style>
-            .stApp { background: radial-gradient(circle at top left, #f8fafc, #e2e8f0) !important; color: #0f172a !important; }
+            .stApp { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important; color: #0f172a !important; }
             .stChatMessage { background: #ffffff !important; border: 1px solid #cbd5e1 !important; }
-            .stTextInput>div>div>input { background-color: #ffffff !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; }
             h1, h2, h3 { color: #0284c7 !important; }
         </style>
         """
     st.markdown(shader_css, unsafe_allow_html=True)
 
-# Global API Keys & File Paths
+# Global Configuration
 API_KEY = st.secrets["GOOGLE_API_KEY"]
-SQL_DB_FILE = "alpha_apex_omnipotence_v21.db"
+SQL_DB_FILE = "alpha_apex_sovereign_vault_v22.db"
 DATA_FOLDER = "data"
 
 if not os.path.exists(DATA_FOLDER):
-    try:
-        os.makedirs(DATA_FOLDER)
-    except Exception as e:
-        st.error(f"CRITICAL ERROR: Data Directory Creation Failed: {e}")
+    os.makedirs(DATA_FOLDER)
 
 # ==============================================================================
 # 2. RELATIONAL DATABASE PERSISTENCE ENGINE (RDBMS)
 # ==============================================================================
 
-def init_omnipotent_db():
-    """Builds the exhaustive multi-table SQL architecture."""
+def init_relational_db():
+    """Builds the comprehensive SQL schema for local vault management."""
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
     
-    # Table 1: Master User Registry
+    # Table 1: Sovereign User Vault
     c.execute('''CREATE TABLE IF NOT EXISTS users (
                     email TEXT PRIMARY KEY, 
                     username TEXT, 
                     password TEXT, 
                     joined_on TEXT,
-                    tier TEXT DEFAULT 'Enterprise',
-                    status TEXT DEFAULT 'Active'
+                    tier TEXT DEFAULT 'Senior Advocate'
                  )''')
     
-    # Table 2: Chamber Registry (Case Management)
+    # Table 2: Chamber Registry
     c.execute('''CREATE TABLE IF NOT EXISTS cases (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     email TEXT, 
                     case_name TEXT, 
-                    created_on TEXT,
-                    category TEXT DEFAULT 'Civil'
+                    created_on TEXT
                  )''')
     
-    # Table 3: Transactional Consultation History
+    # Table 3: Consultation Logs
     c.execute('''CREATE TABLE IF NOT EXISTS history (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     case_id INTEGER, 
                     role TEXT, 
                     content TEXT, 
-                    timestamp TEXT,
-                    tokens_used INTEGER DEFAULT 0
+                    timestamp TEXT
                  )''')
     
-    # Table 4: Digital Jurisprudence Library
+    # Table 4: Law Library Metadata
     c.execute('''CREATE TABLE IF NOT EXISTS documents (
                     id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     name TEXT, 
                     size TEXT, 
                     pages INTEGER, 
-                    indexed_date TEXT,
-                    full_text_status TEXT DEFAULT 'Processed'
+                    indexed_on TEXT
                  )''')
     
     conn.commit()
     conn.close()
 
-def db_register_user_full(email, username, password=""):
-    """Comprehensive registration logic with automated chamber initialization."""
-    if not email: return
+def db_register_user(email, username, password):
+    """Registers a user into the local SQL vault and initializes their chamber."""
+    if not email or not password: return False
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
-    now_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Atomic Insertion
-    c.execute("INSERT OR IGNORE INTO users (email, username, password, joined_on) VALUES (?,?,?,?)", 
-              (email, username, password, now_ts))
-    
-    # Auto-Chamber Creation
-    c.execute("SELECT count(*) FROM cases WHERE email=?", (email,))
-    if c.fetchone()[0] == 0:
+    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        c.execute("INSERT INTO users (email, username, password, joined_on) VALUES (?,?,?,?)", 
+                  (email, username, password, now))
         c.execute("INSERT INTO cases (email, case_name, created_on) VALUES (?,?,?)", 
-                  (email, "Primary Consultation Chamber", now_ts))
-    
-    conn.commit(); conn.close()
+                  (email, "General Consultation", now))
+        conn.commit(); conn.close()
+        return True
+    except sqlite3.IntegrityError:
+        conn.close(); return False
 
-def db_verify_vault_access(email, password):
-    """Secure lookup in the local SQL Vault."""
+def db_authenticate_user(email, password):
+    """Verifies credentials against the local SQL database."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
-    c.execute("SELECT username FROM users WHERE email=? AND password=? AND status='Active'", (email, password))
+    c.execute("SELECT username FROM users WHERE email=? AND password=?", (email, password))
     res = c.fetchone(); conn.close()
     return res[0] if res else None
 
-def db_log_transaction(email, case_name, role, content):
-    """Persistent logging of every consultation message."""
-    if not email or not content: return
+def db_save_message(email, case_name, role, content):
+    """Logs interactions to the persistent history table."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
     c.execute("SELECT id FROM cases WHERE email=? AND case_name=?", (email, case_name))
-    case_id_res = c.fetchone()
-    
-    if case_id_res:
+    case_res = c.fetchone()
+    if case_res:
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c.execute("INSERT INTO history (case_id, role, content, timestamp) VALUES (?,?,?,?)", 
-                  (case_id_res[0], role, content, ts))
+                  (case_res[0], role, content, ts))
         conn.commit()
     conn.close()
 
-def db_fetch_historical_context(email, case_name):
-    """Retrieves full chat history for UI rendering and context injection."""
-    if not email: return []
+def db_load_history(email, case_name):
+    """Retrieves context for the current active chamber."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
-    query = '''
-        SELECT h.role, h.content FROM history h 
-        JOIN cases c ON h.case_id = c.id 
-        WHERE c.email=? AND c.case_name=? 
-        ORDER BY h.id ASC
-    '''
-    c.execute(query, (email, case_name))
-    records = [{"role": row[0], "content": row[1]} for row in c.fetchall()]
-    conn.close(); return records
+    c.execute('''SELECT h.role, h.content FROM history h 
+                 JOIN cases c ON h.case_id = c.id 
+                 WHERE c.email=? AND c.case_name=? ORDER BY h.id ASC''', (email, case_name))
+    data = [{"role": r, "content": t} for r, t in c.fetchall()]; conn.close()
+    return data
 
-init_omnipotent_db()
+init_relational_db()
 
 # ==============================================================================
-# 3. SERVICE ARCHITECTURE: AI, VOICE, & SMTP GATEWAY
+# 3. SERVICE ARCHITECTURE: AI, VOICE, AND SMTP
 # ==============================================================================
 
 @st.cache_resource
-def load_analytical_intelligence():
-    """Initializes the Gemini 1.5 Flash Model with Senior Advocate Parameters."""
+def load_ai_engine():
+    """Initializes Gemini with senior legal advisory parameters."""
     return ChatGoogleGenerativeAI(
         model="gemini-1.5-flash", 
         google_api_key=API_KEY, 
-        temperature=0.1,
-        max_output_tokens=4000
+        temperature=0.2,
+        max_output_tokens=3500
     )
 
-def inject_neural_voice(text, lang_code):
-    """Injects a JavaScript Audio Synthesis Layer for high-quality voice feedback."""
-    clean_text = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
-    js_blob = f"""
-    <script>
-        (function() {{
-            window.speechSynthesis.cancel();
-            var utterance = new SpeechSynthesisUtterance('{clean_text}');
-            utterance.lang = '{lang_code}';
-            utterance.pitch = 1.0;
-            utterance.rate = 1.05;
-            window.speechSynthesis.speak(utterance);
-        }})();
-    </script>
-    """
-    components.html(js_blob, height=0)
+def trigger_voice_synthesis(text, lang):
+    """JS Injection for real-time browser audio feedback."""
+    clean = text.replace("'", "").replace('"', "").replace("\n", " ").strip()
+    js = f"<script>window.speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance('{clean}'); u.lang='{lang}'; window.speechSynthesis.speak(u);</script>"
+    components.html(js, height=0)
 
-def dispatch_secure_email_report(target_email, case_title, chat_log):
-    """Full SMTP Gateway implementation for dispatching legal briefs."""
+def dispatch_email_report(recipient, case_name, history):
+    """SMTP Dispatch for sending consultation logs to user."""
     try:
-        smtp_u = st.secrets["EMAIL_USER"]
-        smtp_p = st.secrets["EMAIL_PASS"]
+        s_user = st.secrets["EMAIL_USER"]
+        s_pass = st.secrets["EMAIL_PASS"]
         
-        brief_body = f"OFFICIAL LEGAL BRIEF FROM ALPHA APEX\n"
-        brief_body += f"CASE IDENTIFIER: {case_title}\n"
-        brief_body += "="*40 + "\n\n"
-        
-        for entry in chat_log:
-            header = "ASSISTANT" if entry['role'] == 'assistant' else "CLIENT"
-            brief_body += f"[{header}]: {entry['content']}\n\n"
+        report = f"ALPHA APEX CASE SUMMARY\nCase: {case_name}\n" + ("="*30) + "\n\n"
+        for m in history:
+            role = "AI ADVOCATE" if m['role'] == 'assistant' else "CLIENT"
+            report += f"[{role}]: {m['content']}\n\n"
             
-        mail = MIMEMultipart()
-        mail['From'] = f"Alpha Apex Intelligence <{smtp_u}>"
-        mail['To'] = target_email
-        mail['Subject'] = f"Legal Consultation Brief: {case_title}"
-        mail.attach(MIMEText(brief_body, 'plain'))
+        msg = MIMEMultipart()
+        msg['From'] = f"Alpha Apex Chambers <{s_user}>"
+        msg['To'] = recipient
+        msg['Subject'] = f"Legal Consult: {case_name}"
+        msg.attach(MIMEText(report, 'plain'))
         
-        session = smtplib.SMTP('smtp.gmail.com', 587)
-        session.starttls()
-        session.login(smtp_u, smtp_p)
-        session.send_message(mail)
-        session.quit()
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(s_user, s_pass)
+        server.send_message(msg)
+        server.quit()
         return True
-    except Exception as exc:
-        st.error(f"MAIL ERROR: {exc}"); return False
+    except Exception as e:
+        st.error(f"Mail Dispatch Error: {e}"); return False
 
-def sync_jurisprudence_library():
-    """Deep-scans the project data directory and synchronizes PDF metadata."""
+def sync_library():
+    """Indexes the local PDF library in the data folder."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
-    known_docs = [r[0] for r in c.execute("SELECT name FROM documents").fetchall()]
-    
+    existing = [r[0] for r in c.execute("SELECT name FROM documents").fetchall()]
     if os.path.exists(DATA_FOLDER):
-        for entry in os.listdir(DATA_FOLDER):
-            if entry.lower().endswith(".pdf") and entry not in known_docs:
-                f_path = os.path.join(DATA_FOLDER, entry)
+        for f in os.listdir(DATA_FOLDER):
+            if f.lower().endswith(".pdf") and f not in existing:
                 try:
-                    pdf_handle = PdfReader(f_path)
-                    f_size = f"{os.path.getsize(f_path)/1024:.2f} KB"
-                    f_date = datetime.datetime.now().strftime("%Y-%m-%d")
-                    c.execute("INSERT INTO documents (name, size, pages, indexed_date) VALUES (?,?,?,?)", 
-                              (entry, f_size, len(pdf_handle.pages), f_date))
-                except Exception as doc_err:
-                    st.warning(f"Could not index {entry}: {doc_err}")
+                    pdf = PdfReader(os.path.join(DATA_FOLDER, f))
+                    sz = f"{os.path.getsize(os.path.join(DATA_FOLDER, f))/1024:.1f} KB"
+                    ts = datetime.datetime.now().strftime("%Y-%m-%d")
+                    c.execute("INSERT INTO documents (name, size, pages, indexed_on) VALUES (?,?,?,?)", 
+                              (f, sz, len(pdf.pages), ts))
+                except: continue
     conn.commit(); conn.close()
 
 # ==============================================================================
-# 4. AUTHENTICATION & HANDSHAKE
-# ==============================================================================
-try:
-    auth_secrets = dict(st.secrets["google_auth"])
-    with open('client_secret.json', 'w') as f: json.dump({"web": auth_secrets}, f)
-    
-    portal_auth = Authenticate(
-        secret_credentials_path='client_secret.json',
-        cookie_name='alpha_apex_omnipotence_session',
-        cookie_key='omnipotence_secure_access_2026',
-        redirect_uri=auth_secrets['redirect_uris'][0],
-    )
-    portal_auth.check_authentification()
-except Exception as auth_crit:
-    st.error(f"AUTHENTICATION FAILURE: {auth_crit}"); st.stop()
-
-# ==============================================================================
-# 5. UI MODULES: LEGAL CHAMBERS
+# 4. UI MODULES: SOVEREIGN CHAMBERS
 # ==============================================================================
 
-def render_omnipotent_chambers():
-    """Main workstation for legal consultation with side-by-side voice input."""
-    languages = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK"}
+def render_chambers():
+    """Primary consultation room with side-by-side voice input."""
+    langs = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK"}
     
     with st.sidebar:
         st.title("⚖️ Alpha Apex")
-        st.caption("Omnipotence Edition v21.0")
+        mode = st.radio("UI Mode", ["Dark Mode", "Light Mode"], horizontal=True)
+        apply_sovereign_shaders(mode)
         
-        ui_mode = st.radio("Shader Selection", ["Dark Mode", "Light Mode"], horizontal=True)
-        apply_omnipotence_shaders(ui_mode)
-        
-        st.divider()
-        st.subheader("🏛️ Protocol")
-        target_lang = st.selectbox("🌐 Language", list(languages.keys()))
-        l_code = languages[target_lang]
+        target_lang = st.selectbox("🌐 Language", list(langs.keys()))
+        lang_code = langs[target_lang]
         
         st.divider()
-        st.subheader("📁 Case Navigator")
-        cur_email = st.session_state.user_email
-        db_conn = sqlite3.connect(SQL_DB_FILE); db_c = db_conn.cursor()
-        available_cases = [r[0] for r in db_c.execute("SELECT case_name FROM cases WHERE email=?", (cur_email,)).fetchall()]
-        db_conn.close()
+        st.subheader("📁 Case Records")
+        u_email = st.session_state.user_email
+        conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
+        cases = [r[0] for r in c.execute("SELECT case_name FROM cases WHERE email=?", (u_email,)).fetchall()]
+        conn.close()
         
-        st.session_state.active_chamber = st.selectbox("Active Chamber", available_cases if available_cases else ["Primary Consultation Chamber"])
+        st.session_state.active_case = st.selectbox("Active Chamber", cases if cases else ["General Consultation"])
         
-        if st.button("➕ Create New Case"):
-            st.session_state.spawn_case = True
-            
-        if st.session_state.get('spawn_case'):
-            new_id = st.text_input("Case Identifier")
-            if st.button("Confirm Init") and new_id:
-                db_conn = sqlite3.connect(SQL_DB_FILE); db_c = db_conn.cursor()
-                db_c.execute("INSERT INTO cases (email, case_name, created_on) VALUES (?,?,?)", 
-                             (cur_email, new_id, datetime.datetime.now().strftime("%Y-%m-%d")))
-                db_conn.commit(); db_conn.close()
-                st.session_state.spawn_case = False; st.rerun()
+        if st.button("➕ New Case"):
+            st.session_state.create_case = True
+        
+        if st.session_state.get('create_case'):
+            c_name = st.text_input("Case Name")
+            if st.button("Initialize") and c_name:
+                conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
+                c.execute("INSERT INTO cases (email, case_name, created_on) VALUES (?,?,?)", 
+                          (u_email, c_name, str(datetime.date.today())))
+                conn.commit(); conn.close(); st.session_state.create_case = False; st.rerun()
 
         st.divider()
-        if st.button("📧 Email Brief"):
-            log_to_send = db_fetch_historical_context(cur_email, st.session_state.active_chamber)
-            if dispatch_secure_email_report(cur_email, st.session_state.active_chamber, log_to_send):
-                st.toast("Legal Brief Dispatched Successfully!"); time.sleep(1)
+        if st.button("📧 Send Brief"):
+            hist = db_load_history(u_email, st.session_state.active_case)
+            if dispatch_email_report(u_email, st.session_state.active_case, hist):
+                st.success("Brief Dispatched.")
 
-        if st.button("🚪 Hard Logout"):
-            for session_key in list(st.session_state.keys()): del st.session_state[session_key]
-            portal_auth.logout(); st.rerun()
+        if st.button("🚪 Logout"):
+            st.session_state.logged_in = False
+            st.rerun()
 
-    # --- MAIN VIEWPORT ---
-    st.header(f"💼 Case Room: {st.session_state.active_chamber}")
+    st.header(f"💼 Chambers: {st.session_state.active_case}")
     
-    transaction_log = db_fetch_historical_context(st.session_state.user_email, st.session_state.active_chamber)
-    for msg in transaction_log:
+    # 1. Historical Messages
+    history_log = db_load_history(st.session_state.user_email, st.session_state.active_case)
+    for msg in history_log:
         with st.chat_message(msg["role"]): st.write(msg["content"])
 
-    st.write("") 
-    
-    # --- SIDE-BY-SIDE PROMPT & VOICE ---
-    input_column_layout = st.columns([0.82, 0.18])
-    with input_column_layout[0]:
-        user_inquiry = st.text_input("Legal Fact Input", placeholder="Type your query...", label_visibility="collapsed", key="master_text_input")
-    with input_column_layout[1]:
-        v_inquiry = speech_to_text(language=l_code, key='omni_mic', just_once=True, use_container_width=True)
+    # 2. Side-by-Side Prompt Area
+    input_cols = st.columns([0.83, 0.17])
+    with input_cols[0]:
+        user_query = st.text_input("Enter facts...", placeholder="State your inquiry...", label_visibility="collapsed", key="txt_in")
+    with input_cols[1]:
+        v_query = speech_to_text(language=lang_code, key='mic_in', just_once=True, use_container_width=True)
 
-    active_prompt = v_inquiry or user_inquiry
+    final_q = v_query or user_query
 
-    if active_prompt:
-        db_log_transaction(st.session_state.user_email, st.session_state.active_chamber, "user", active_prompt)
-        with st.chat_message("user"): st.write(active_prompt)
+    if final_q:
+        db_save_message(st.session_state.user_email, st.session_state.active_case, "user", final_q)
+        with st.chat_message("user"): st.write(final_q)
         
         with st.chat_message("assistant"):
             with st.spinner("Analyzing Statutes..."):
                 try:
-                    prompt_logic = f"Senior Advocate Persona. Use IRAC format. Language: {target_lang}. Query: {active_prompt}"
-                    ai_result = load_analytical_intelligence().invoke(prompt_logic).content
-                    st.markdown(ai_result)
-                    db_log_transaction(st.session_state.user_email, st.session_state.active_chamber, "assistant", ai_result)
-                    inject_neural_voice(ai_result, l_code)
+                    p = f"Persona: Senior Advocate. Structure: IRAC. Lang: {target_lang}. Query: {final_q}"
+                    res = load_ai_engine().invoke(p).content
+                    st.markdown(res)
+                    db_save_message(st.session_state.user_email, st.session_state.active_case, "assistant", res)
+                    trigger_voice_synthesis(res, lang_code)
                     st.rerun()
-                except Exception as ai_err: st.error(f"AI ERROR: {ai_err}")
+                except Exception as e: st.error(f"AI Failure: {e}")
 
-def render_omnipotent_library():
-    st.header("📚 Virtual Jurisprudence Library")
-    if st.button("🔄 Rescan Library"): sync_jurisprudence_library(); st.rerun()
-    db_conn = sqlite3.connect(SQL_DB_FILE); db_c = db_conn.cursor()
-    lib_data = db_c.execute("SELECT name, size, pages, indexed_date FROM documents").fetchall()
-    db_conn.close()
-    if lib_data: st.table(pd.DataFrame(lib_data, columns=["Filename", "Size", "Pages", "Sync Date"]))
+def render_library():
+    st.header("📚 Law Library")
+    if st.button("🔄 Sync"): sync_library(); st.rerun()
+    conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
+    docs = c.execute("SELECT name, size, pages, indexed_on FROM documents").fetchall()
+    conn.close()
+    if docs: st.table(pd.DataFrame(docs, columns=["Name", "Size", "Pages", "Sync Date"]))
 
-def render_entry_portal():
-    st.title("⚖️ Alpha Apex Public Gateway")
-    google_profile = portal_auth.login()
-    if google_profile:
-        st.session_state.connected = True
-        st.session_state.user_email = google_profile['email']
-        st.session_state.username = google_profile.get('name', 'Advocate')
-        db_register_user_full(st.session_state.user_email, st.session_state.username)
-        st.rerun()
-
-    st.divider()
-    t1, t2 = st.tabs(["🔐 Vault Login", "📝 Register Vault"])
-    with t1:
-        v_email = st.text_input("Vault Email")
-        v_pass = st.text_input("Vault Security Key", type="password")
-        if st.button("Authorize Entry"):
-            v_name = db_verify_vault_access(v_email, v_pass)
-            if v_name:
-                st.session_state.connected = True
-                st.session_state.user_email = v_email
-                st.session_state.username = v_name
+def render_login_portal():
+    """RESTORED: Complete Sovereign Login & Signup Interface (Bypasses Google)."""
+    st.title("⚖️ Alpha Apex Sovereign Login")
+    st.markdown("#### Internal Database Access Gateway")
+    
+    tab1, tab2 = st.tabs(["🔐 Login", "📝 Create Account"])
+    
+    with tab1:
+        le = st.text_input("Email")
+        lp = st.text_input("Password", type="password")
+        if st.button("Access Vault"):
+            uname = db_authenticate_user(le, lp)
+            if uname:
+                st.session_state.logged_in = True
+                st.session_state.user_email = le
+                st.session_state.username = uname
                 st.rerun()
-            else: st.error("Access Denied.")
-    with t2:
-        reg_email = st.text_input("Primary Email")
-        reg_name = st.text_input("Full Name")
-        reg_pass = st.text_input("Define Security Key", type="password")
-        if st.button("Establish Account"):
-            db_register_user_full(reg_email, reg_name, reg_pass)
-            st.success("VAULT ACCOUNT CREATED.")
+            else: st.error("Access Denied: Invalid Credentials")
+            
+    with tab2:
+        re = st.text_input("Signup Email")
+        ru = st.text_input("Full Name")
+        rp = st.text_input("Create Password", type="password")
+        if st.button("Register Sovereign Account"):
+            if db_register_user(re, ru, rp):
+                st.success("Account Created! Please switch to Login tab.")
+            else: st.error("Registration Failed: Email already exists.")
 
 # ==============================================================================
-# 6. MASTER EXECUTION ENGINE
+# 5. MASTER EXECUTION ENGINE
 # ==============================================================================
 
-if "connected" not in st.session_state: st.session_state.connected = False
+if "logged_in" not in st.session_state: st.session_state.logged_in = False
 
-if not st.session_state.connected:
-    try:
-        check_u = portal_auth.check_authentification()
-        if check_u:
-            st.session_state.connected = True
-            st.session_state.user_email = check_u['email']
-            st.session_state.username = check_u.get('name', 'Advocate')
-            st.rerun()
-    except: pass
-
-if not st.session_state.connected:
-    render_entry_portal()
+if not st.session_state.logged_in:
+    render_login_portal()
 else:
-    nav_route = st.sidebar.radio("Navigation", ["Legal Chambers", "Library", "About"])
-    if nav_route == "Legal Chambers": render_omnipotent_chambers()
-    elif nav_route == "Library": render_omnipotent_library()
+    nav = st.sidebar.radio("Navigation", ["Chambers", "Library", "About"])
+    if nav == "Chambers": render_chambers()
+    elif nav == "Library": render_library()
     else:
-        st.header("ℹ️ Alpha Apex Development Credentials")
-        st.table([["Saim Ahmed", "Lead"], ["Huzaifa Khan", "AI Logic"], ["Mustafa Khan", "DB Architect"], ["Ibrahim Sohail", "UX/Voice"], ["Daniyal Faraz", "SMTP Gateway"]])
+        st.header("ℹ️ Development Team")
+        st.table([["Saim Ahmed", "Lead"], ["Huzaifa Khan", "AI"], ["Mustafa Khan", "DB"], ["Ibrahim Sohail", "UX"], ["Daniyal Faraz", "QA"]])
+
+# ==============================================================================
+# END OF SCRIPT - VERBOSE & COMPREHENSIVE
+# ==============================================================================
