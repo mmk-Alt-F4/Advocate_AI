@@ -146,7 +146,6 @@ except Exception as e:
     st.error(f"OAuth Config Missing: {e}")
     st.stop()
 
-# FIX: Replaced check_authentication() with login()
 user_info = authenticator.login()
 
 if user_info:
@@ -325,3 +324,4 @@ else:
     if page == "Chambers": render_chambers()
     elif page == "Legal Library": render_library()
     else: render_about()
+
