@@ -144,9 +144,9 @@ def send_email_report(receiver_email, case_name, history):
 @st.cache_resource
 def load_llm():
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash", 
-        GOOGLE_API_KEY=API_KEY, 
-        temperature=0.0,
+        model="gemini-1.5-flash", 
+        google_api_key=API_KEY, 
+        temperature=0.2,
         safety_settings={
             "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE", 
             "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE", 
@@ -179,7 +179,7 @@ except Exception as e:
     st.stop()
 
 # ==============================================================================
-# 4. CHAMBERS
+# 4. PAGES
 # ==============================================================================
 def render_chambers():
     langs = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"}
@@ -255,9 +255,6 @@ def render_chambers():
             except Exception as e:
                 st.error(f"Error: {e}")
 
-# ==============================================================================
-# 5. LIBRARY & ABOUT
-# ==============================================================================
 def render_library():
     st.header("📚 Legal Library & Vector Index")
     st.subheader("📑 Vectorized Document Index (Synced with /data)")
@@ -298,13 +295,25 @@ def render_about():
     st.table(team)
 
 # ==============================================================================
-# 6. LOGIN / SIGNUP PAGE
+# 5. LOGIN FLOW
 # ==============================================================================
+def check_auth():
+    # Check if user is already authenticated via Google
+    if not st.session_state.get('logged_in'):
+        user_info = authenticator.check_authentification()
+        if user_info:
+            st.session_state.logged_in = True
+            st.session_state.user_email = user_info['email']
+            st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
+            db_register_user(st.session_state.user_email, st.session_state.username)
+            st.rerun()
+
 def render_login():
     st.title("⚖️ Alpha Apex Login")
     tab1, tab2 = st.tabs(["Google Access", "Manual Access"])
     
     with tab1:
+        # Check if we already have a response from Google
         user_info = authenticator.login()
         if user_info:
             st.session_state.logged_in = True
@@ -336,9 +345,11 @@ def render_login():
                 else: st.error("Invalid credentials.")
 
 # ==============================================================================
-# 7. MAIN FLOW
+# 6. MAIN FLOW
 # ==============================================================================
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
+
+check_auth() # Handle persistent login
 
 if not st.session_state.logged_in:
     render_login()
@@ -347,5 +358,3 @@ else:
     if page == "Chambers": render_chambers()
     elif page == "Legal Library": render_library()
     else: render_about()
-
-
