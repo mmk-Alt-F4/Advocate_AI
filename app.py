@@ -276,7 +276,7 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         smtp_sender = st.secrets["EMAIL_USER"]
         smtp_pass = st.secrets["EMAIL_PASS"].replace(" ", "")
         
-        # Construct the email body text
+        # FIX: Construct valid email content string
         email_content = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
         email_content += f"CHAMBER: {chamber_name}\n"
         email_content += f"GENERATED ON: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -284,17 +284,16 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         
         for entry in history_data:
             speaker = "ADVOCATE" if entry['role'] == 'assistant' else "CLIENT"
-            # Clean text for email compatibility
             clean_body = re.sub(r'[*#_]', '', entry['content'])
             email_content += f"[{speaker}]: {clean_body}\n\n"
             
-        # Create MIME container
+        # FIX: Ensure MIME structure correctly includes the body
         msg = MIMEMultipart()
         msg['From'] = f"Alpha Apex Chambers <{smtp_sender}>"
         msg['To'] = target_email
         msg['Subject'] = f"Legal Consult Brief: {chamber_name}"
         
-        # Attach text with UTF-8 encoding to ensure content is sent
+        # Attach text using UTF-8 to prevent empty body errors
         msg.attach(MIMEText(email_content, 'plain', 'utf-8'))
         
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -398,12 +397,10 @@ def render_chamber_workstation():
 
     final_input = t_input or v_input
 
-    # --- THE REPETITION GUARD (THE FIX) ---
     if final_input:
         if "last_processed_query" not in st.session_state or st.session_state.last_processed_query != final_input:
             st.session_state.last_processed_query = final_input
             
-            # Step 1: SQL Transaction Logging
             db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "user", final_input)
             
             with st.chat_message("user"):
@@ -416,8 +413,8 @@ def render_chamber_workstation():
                         SYSTEM PERSONA: You are a Senior High Court Advocate of Pakistan.
                         BEHAVIORAL RULES:
                         1. Check the user input for intent.
-                        2. If input is a GREETING (e.g., Hi, Hello, Salam), respond warmly like a human advocate. DO NOT use IRAC.
-                        3. If input is a LEGAL PROBLEM, use strict IRAC format (Issue, Rule, Analysis, Conclusion).
+                        2. If input is a GREETING, respond warmly. DO NOT use IRAC.
+                        3. If input is a LEGAL PROBLEM, use strict IRAC format.
                         4. Cite Pakistan Penal Code (PPC), CrPC, or Civil Code where relevant.
                         5. Language: {active_lang}.
                         USER INPUT: {final_input}
@@ -426,10 +423,8 @@ def render_chamber_workstation():
                         ai_response = get_analytical_engine().invoke(p_logic).content
                         st.markdown(ai_response)
                         
-                        # Step 2: AI Response SQL Logging
                         db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "assistant", ai_response)
                         
-                        # Step 3: Synthesis Trigger
                         execute_neural_synthesis(ai_response, l_code)
                         st.rerun()
                     except Exception as e:
