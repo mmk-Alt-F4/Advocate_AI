@@ -58,7 +58,7 @@ st.markdown("""
         font-family: 'Segoe UI', 'Tahoma', sans-serif;
         font-size: 1.1rem;
     }
-    /* Black Sidebar Styling */
+    /* Professional Black Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: #000000;
         border-right: 1px solid #333;
@@ -67,11 +67,11 @@ st.markdown("""
     [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
         color: #ffffff !important;
     }
-    /* Buttons in Sidebar */
     [data-testid="stSidebar"] .stButton button {
         background-color: #222;
         color: white;
         border: 1px solid #444;
+        width: 100%;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -113,21 +113,30 @@ def stream_text(text):
 def init_sql_db():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, joined_date TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
     conn.commit()
     conn.close()
 
-def db_register_user(email, username):
+def db_register_user(email, username, password=""):
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO users VALUES (?,?,?)", (email, username, datetime.datetime.now().strftime("%Y-%m-%d")))
+    c.execute("INSERT OR IGNORE INTO users (email, username, password, joined_date) VALUES (?,?,?,?)", 
+              (email, username, password, datetime.datetime.now().strftime("%Y-%m-%d")))
     c.execute("SELECT count(*) FROM cases WHERE email=?", (email,))
     if c.fetchone()[0] == 0:
         c.execute("INSERT INTO cases (email, case_name, created_at) VALUES (?,?,?)", (email, "General Consultation", datetime.datetime.now().strftime("%Y-%m-%d")))
     conn.commit()
     conn.close()
+
+def db_check_login(email, password):
+    conn = sqlite3.connect(SQL_DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username FROM users WHERE email=? AND password=?", (email, password))
+    res = c.fetchone()
+    conn.close()
+    return res[0] if res else None
 
 def db_get_cases(email):
     conn = sqlite3.connect(SQL_DB_FILE)
@@ -250,7 +259,7 @@ if "law_db" not in st.session_state:
     st.session_state.law_db = db_inst
 
 # ==============================================================================
-# 6. AUTHENTICATION
+# 6. AUTHENTICATION & LOGIN/SIGNUP UI
 # ==============================================================================
 
 try:
@@ -274,26 +283,40 @@ authenticator = Authenticate(
 if "logged_in" not in st.session_state: 
     st.session_state.logged_in = False
 
-def login_page():
+def login_signup_page():
     c1, c2, c3 = st.columns([1, 2, 1])
     with c2:
         st.write("# Alpha Apex AI")
         with st.container(border=True):
-            t1, t2 = st.tabs(["Google Login", "Email Login"])
+            t1, t2 = st.tabs(["Google Login", "Email Access"])
             with t1: 
                 authenticator.login()
             with t2:
-                e = st.text_input("Email")
-                if st.button("Enter"):
-                    if "@" in e:
-                        st.session_state.logged_in = True
-                        st.session_state.user_email = e
-                        st.session_state.username = e.split("@")[0].title()
-                        db_register_user(e, st.session_state.username)
-                        st.rerun()
+                auth_mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
+                email_in = st.text_input("Email")
+                pass_in = st.text_input("Password", type="password")
+                
+                if auth_mode == "Signup":
+                    name_in = st.text_input("Full Name")
+                    if st.button("Create Account"):
+                        if email_in and pass_in and name_in:
+                            db_register_user(email_in, name_in, pass_in)
+                            st.success("Account created successfully. Please switch to Login.")
+                        else:
+                            st.warning("Please fill all fields.")
+                else:
+                    if st.button("Sign In"):
+                        username = db_check_login(email_in, pass_in)
+                        if username:
+                            st.session_state.logged_in = True
+                            st.session_state.user_email = email_in
+                            st.session_state.username = username
+                            st.rerun()
+                        else:
+                            st.error("Invalid email or password.")
 
 # ==============================================================================
-# 7. CHAMBERS INTERFACE (FULL RENDER)
+# 7. CHAMBERS INTERFACE
 # ==============================================================================
 
 def render_chambers_page():
@@ -334,7 +357,7 @@ def render_chambers_page():
             db_create_case(st.session_state.user_email, f"Case {len(cases)+1}")
             st.rerun()
 
-        if st.button("Clear History"):
+        if st.button("Clear Chat History"):
             db_clear_history(st.session_state.user_email, st.session_state.active_case)
             st.session_state.messages = []
             st.rerun()
@@ -355,29 +378,29 @@ def render_chambers_page():
         st.divider()
         if st.button("Log Out"):
             st.session_state.logged_in = False
+            st.session_state.connected = False
             st.rerun()
 
     st.title(f"Case File: {st.session_state.active_case}")
 
-    # Action Row
     q_col1, q_col2, q_col3 = st.columns(3)
     quick_q = None
     if q_col1.button("Infer Legal Path"): quick_q = "What is the recommended legal path forward?"
     if q_col2.button("Give Ruling"): quick_q = "Give a preliminary observation on these facts."
     if q_col3.button("Summarize"): quick_q = "Summarize the legal history of this case."
 
-    # Persistent Chat Container
+    # Persistent Chat History
     if "messages" not in st.session_state or st.session_state.get("last_case") != st.session_state.active_case:
         st.session_state.messages = db_load_history(st.session_state.user_email, st.session_state.active_case)
         st.session_state.last_case = st.session_state.active_case
 
-    chat_placeholder = st.container()
-    with chat_placeholder:
+    chat_container = st.container()
+    with chat_container:
         for msg in st.session_state.messages:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-    # Input Control
+    # Bottom Input logic
     c_text, c_mic = st.columns([10, 1])
     with c_text:
         text_in = st.chat_input(f"Consult in {target_lang}...")
@@ -392,7 +415,7 @@ def render_chambers_page():
         db_save_message(st.session_state.user_email, st.session_state.active_case, "user", final_in)
         st.session_state.messages.append({"role": "user", "content": final_in})
         
-        with chat_placeholder:
+        with chat_container:
             with st.chat_message("user"):
                 st.markdown(final_in)
             
@@ -436,7 +459,7 @@ def render_chambers_page():
                     st.error(f"Error: {e}")
 
 # ==============================================================================
-# 8. LIBRARY PAGE (FULL RENDER)
+# 8. LIBRARY PAGE
 # ==============================================================================
 
 def render_library_page():
@@ -492,21 +515,20 @@ def render_team_page():
 # 10. MAIN EXECUTION FLOW
 # ==============================================================================
 
+# OAuth handling
 if st.session_state.get('connected'):
-    if not st.session_state.get('logged_in'):
-        user_info = st.session_state.get('user_info', {})
-        st.session_state.user_email = user_info.get('email')
-        st.session_state.username = user_info.get('name', "Lawyer")
-        st.session_state.logged_in = True
-        db_register_user(st.session_state.user_email, st.session_state.username)
-        st.rerun()
+    user_info = st.session_state.get('user_info', {})
+    st.session_state.user_email = user_info.get('email')
+    st.session_state.username = user_info.get('name', "Counsel")
+    st.session_state.logged_in = True
+    db_register_user(st.session_state.user_email, st.session_state.username)
 
-if not st.session_state.get('logged_in'):
-    login_page()
+if not st.session_state.logged_in:
+    login_signup_page()
 else:
     with st.sidebar:
         st.markdown("---")
-        nav = st.radio("Navigate", ["Chambers", "Library", "Team"], label_visibility="collapsed")
+        nav = st.sidebar.radio("Navigate", ["Chambers", "Library", "Team"], label_visibility="collapsed")
     
     if nav == "Chambers":
         render_chambers_page()
