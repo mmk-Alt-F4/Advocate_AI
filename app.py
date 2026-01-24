@@ -321,7 +321,7 @@ def render_chambers():
 # ==============================================================================
 def render_library():
     """Renders the library page with the data folder sync status."""
-    st.header("📚 Virtual Legal Library")
+    st.header("📚 Virtual Law Library")
     st.subheader("📑 Document Indexing Engine")
     
     if st.button("🔄 Rescan /data Folder"):
@@ -359,7 +359,7 @@ def render_about():
         {"Member": "Huzaifa Khan", "ID": "System Architect", "Contact": "m.huzaifa.khan471@gmail.com"},
         {"Member": "Mustafa Khan", "ID": "Database Engineer", "Contact": "muhammadmustafakhan430@gmail.com"},
         {"Member": "Ibrahim Sohail", "ID": "UI/UX Designer", "Contact": "ibrahimsohailkhan10@gmail.com"},
-        {"Member": "Daniyal Faraz", "ID": "QA Specialist", "Contact": "daniyalfarazkhan2012@gmail.com"},
+        {"Member": "Daniyal Faraz", "ID": "Debugger", "Contact": "daniyalfarazkhan2012@gmail.com"},
     ]
     st.table(team)
 
@@ -421,14 +421,15 @@ if "logged_in" not in st.session_state:
 if not st.session_state.logged_in:
     render_login()
 else:
-    nav_choice = st.sidebar.radio("Navigation", ["Chambers", "Legal Library", "System About"])
+    nav_choice = st.sidebar.radio("Navigation", ["Chambers", "Law Library", "System About"])
     if nav_choice == "Chambers":
         render_chambers()
-    elif nav_choice == "Legal Library":
+    elif nav_choice == "Law Library":
         render_library()
     else:
         render_about()
 
 # ==============================================================================
-# END OF CODE (380+ LINES)
+# END OF CODE (430+ LINES)
 # ==============================================================================
+
