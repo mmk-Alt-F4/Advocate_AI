@@ -248,8 +248,8 @@ init_omnipotent_db()
 def load_analytical_intelligence():
     """Initializes the Gemini 1.5 Flash Model with Senior Advocate Parameters."""
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
-        google_api_key=API_KEY, 
+        model="gemini-2.5-flash", 
+        GOOGLE_API_KEY=API_KEY, 
         temperature=0.1,
         max_output_tokens=4000,
         top_p=0.95
@@ -569,3 +569,4 @@ else:
 # ==============================================================================
 # END OF SCRIPT - 500+ LINES OF OMNIPOTENCE PRODUCTION CODE
 # ==============================================================================
+
