@@ -20,7 +20,7 @@ from email.mime.multipart import MIMEMultipart
 # ==============================================================================
 st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
-# Corrected Secret Key
+# Corrected Secret Key per instructions
 API_KEY = st.secrets["GOOGLE_API_KEY"]
 SQL_DB_FILE = "advocate_ai_v3.db"
 
@@ -29,7 +29,7 @@ def init_sql_db():
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
     
-    # Ensure password column exists if table was created older versions
+    # Ensure password column exists for manual signup support
     c.execute("PRAGMA table_info(users)")
     columns = [info[1] for info in c.fetchall()]
     if 'password' not in columns:
@@ -129,7 +129,7 @@ def play_voice_js(text, lang_code):
     components.html(js_code, height=0)
 
 # ==============================================================================
-# 3. GOOGLE OAUTH CONFIG
+# 3. GOOGLE OAUTH CONFIG (FIXED METHOD)
 # ==============================================================================
 try:
     auth_config = dict(st.secrets["google_auth"])
@@ -146,15 +146,14 @@ except Exception as e:
     st.error(f"OAuth Config Missing: {e}")
     st.stop()
 
-authenticator.check_authentication()
+# FIX: Replaced check_authentication() with login()
+user_info = authenticator.login()
 
-if st.session_state.get('connected'):
-    uinfo = st.session_state.get('user_info', {})
-    if 'email' in uinfo:
-        st.session_state.logged_in = True
-        st.session_state.user_email = uinfo['email']
-        st.session_state.username = uinfo.get('name', uinfo['email'].split('@')[0])
-        db_register_user(st.session_state.user_email, st.session_state.username)
+if user_info:
+    st.session_state.logged_in = True
+    st.session_state.user_email = user_info['email']
+    st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
+    db_register_user(st.session_state.user_email, st.session_state.username)
 
 # ==============================================================================
 # 4. CHAMBERS
@@ -234,33 +233,39 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY & ABOUT (LEGAL STATUTES UPDATED)
+# 5. LIBRARY & ABOUT (LEGAL STATUTES INCLUDED)
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library")
     st.info("Direct access to Pakistan's Primary Legal Statutes.")
     
-    col1, col2 = st.columns(2)
+    tab1, tab2, tab3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
     
-    with col1:
-        st.subheader("🇵🇰 Statutes & Codes")
+    with tab1:
+        st.subheader("Criminal Codes")
         st.markdown("""
-        * **Pakistan Penal Code (PPC):** The core document defining crimes and punishments.
-        * **Code of Criminal Procedure (CrPC):** Procedures for criminal law enforcement.
-        * **Civil Procedure Code (CPC):** The framework for civil litigation.
-        * **Qanun-e-Shahadat Order (QSO):** The law of evidence in Pakistan.
+        - **Pakistan Penal Code (PPC) 1860**: Covers all criminal offenses from Section 1 to 511.
+        - **Code of Criminal Procedure (CrPC) 1898**: Details the procedure for arrests, trials, and appeals.
+        - **Anti-Terrorism Act (ATA) 1997**: Special laws for heinous crimes.
         """)
         
-    with col2:
-        st.subheader("📜 Constitutional Documents")
+    with tab2:
+        st.subheader("Civil Codes & Procedure")
         st.markdown("""
-        * **Constitution of 1973:** The supreme law of Pakistan.
-        * **Amendments:** Track the 1st through 26th Amendments.
-        * **Fundamental Rights:** Article 8 to 28 details.
+        - **Civil Procedure Code (CPC) 1908**: The backbone of civil litigation.
+        - **Contract Act 1872**: Rules for agreements and obligations.
+        - **Transfer of Property Act (TPA) 1882**: Laws governing the sale and mortgage of property.
+        - **Qanun-e-Shahadat Order (QSO) 1984**: The Law of Evidence in Pakistan.
         """)
 
-    st.divider()
-    st.write("🔍 *Note: Use the Chambers AI to search specific clauses within these statutes.*")
+    with tab3:
+        st.subheader("Supreme Law")
+        st.markdown("""
+        - **Constitution of Pakistan 1973**: 
+            - *Part II*: Fundamental Rights (Articles 8-28).
+            - *Part VII*: The Judicature (Supreme Court & High Courts).
+            - *26th Amendment*: Recent changes to the judicial appointment process.
+        """)
 
 def render_about():
     st.header("ℹ️ About Alpha Apex")
@@ -281,6 +286,8 @@ def render_login():
     tab1, tab2 = st.tabs(["Google Login", "Manual Access"])
     
     with tab1:
+        # The login button is rendered automatically via the login() call above
+        # But we can provide a link if the user hasn't interacted yet
         auth_url = authenticator.get_authorization_url()
         st.link_button("Login with Google", auth_url)
 
