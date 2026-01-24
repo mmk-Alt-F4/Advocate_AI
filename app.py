@@ -176,7 +176,7 @@ def send_email_report(receiver_email, case_name, history):
 def load_llm():
     """Initializes the Gemini model with specific safety overrides."""
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
+        model="gemini-2.5-flash", 
         google_api_key=API_KEY, 
         temperature=0.2,
         safety_settings={
@@ -432,4 +432,5 @@ else:
 # ==============================================================================
 # END OF CODE (430+ LINES)
 # ==============================================================================
+
 
