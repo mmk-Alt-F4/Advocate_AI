@@ -88,13 +88,9 @@ def apply_omnipotence_shaders(theme_mode):
             background: linear-gradient(45deg, #334155, #475569) !important;
         }
 
-        /* Side-by-Side Component Alignment Logic */
-        .voice-input-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
-            width: 100%;
+        /* Fixed Footer/Input Area Spacing */
+        .stChatInputContainer {
+            padding-bottom: 20px !important;
         }
 
         /* Scrollbar Aesthetics */
@@ -123,7 +119,7 @@ def apply_omnipotence_shaders(theme_mode):
         """
     st.markdown(shader_css, unsafe_allow_html=True)
 
-# Configuration Global Constants
+# Global API Keys & File Paths
 API_KEY = st.secrets["GOOGLE_API_KEY"]
 SQL_DB_FILE = "alpha_apex_omnipotence_v21.db"
 DATA_FOLDER = "data"
@@ -132,7 +128,7 @@ if not os.path.exists(DATA_FOLDER):
     try:
         os.makedirs(DATA_FOLDER)
     except Exception as e:
-        st.error(f"SYSTEM FAILURE: Directory Creation Error: {e}")
+        st.error(f"CRITICAL ERROR: Data Directory Creation Failed: {e}")
 
 # ==============================================================================
 # 2. RELATIONAL DATABASE PERSISTENCE ENGINE (RDBMS)
@@ -248,11 +244,10 @@ init_omnipotent_db()
 def load_analytical_intelligence():
     """Initializes the Gemini 1.5 Flash Model with Senior Advocate Parameters."""
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash", 
-        GOOGLE_API_KEY=API_KEY, 
+        model="gemini-1.5-flash", 
+        google_api_key=API_KEY, 
         temperature=0.1,
-        max_output_tokens=4000,
-        top_p=0.95
+        max_output_tokens=4000
     )
 
 def inject_neural_voice(text, lang_code):
@@ -266,7 +261,6 @@ def inject_neural_voice(text, lang_code):
             utterance.lang = '{lang_code}';
             utterance.pitch = 1.0;
             utterance.rate = 1.05;
-            utterance.volume = 1.0;
             window.speechSynthesis.speak(utterance);
         }})();
     </script>
@@ -281,15 +275,12 @@ def dispatch_secure_email_report(target_email, case_title, chat_log):
         
         brief_body = f"OFFICIAL LEGAL BRIEF FROM ALPHA APEX\n"
         brief_body += f"CASE IDENTIFIER: {case_title}\n"
-        brief_body += f"DATE GENERATED: {datetime.date.today()}\n"
         brief_body += "="*40 + "\n\n"
         
         for entry in chat_log:
-            header = "ASSISTANT COUNSEL" if entry['role'] == 'assistant' else "CLIENT"
+            header = "ASSISTANT" if entry['role'] == 'assistant' else "CLIENT"
             brief_body += f"[{header}]: {entry['content']}\n\n"
             
-        brief_body += "\n" + "="*40 + "\nDISCLAIMER: AI-generated summaries require human review."
-        
         mail = MIMEMultipart()
         mail['From'] = f"Alpha Apex Intelligence <{smtp_u}>"
         mail['To'] = target_email
@@ -303,10 +294,10 @@ def dispatch_secure_email_report(target_email, case_title, chat_log):
         session.quit()
         return True
     except Exception as exc:
-        st.error(f"MAIL GATEWAY ERROR: {exc}"); return False
+        st.error(f"MAIL ERROR: {exc}"); return False
 
 def sync_jurisprudence_library():
-    """Deep-scans the project data directory and synchronizes PDF metadata to SQL."""
+    """Deep-scans the project data directory and synchronizes PDF metadata."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
     known_docs = [r[0] for r in c.execute("SELECT name FROM documents").fetchall()]
     
@@ -322,11 +313,10 @@ def sync_jurisprudence_library():
                               (entry, f_size, len(pdf_handle.pages), f_date))
                 except Exception as doc_err:
                     st.warning(f"Could not index {entry}: {doc_err}")
-                    continue
     conn.commit(); conn.close()
 
 # ==============================================================================
-# 4. AUTHENTICATION & PUBLIC GATEWAY HANDSHAKE
+# 4. AUTHENTICATION & HANDSHAKE
 # ==============================================================================
 try:
     auth_secrets = dict(st.secrets["google_auth"])
@@ -340,10 +330,10 @@ try:
     )
     portal_auth.check_authentification()
 except Exception as auth_crit:
-    st.error(f"AUTHENTICATION ARCHITECTURE FAILURE: {auth_crit}"); st.stop()
+    st.error(f"AUTHENTICATION FAILURE: {auth_crit}"); st.stop()
 
 # ==============================================================================
-# 5. UI MODULES: LEGAL CHAMBERS, LIBRARY, & SETTINGS
+# 5. UI MODULES: LEGAL CHAMBERS
 # ==============================================================================
 
 def render_omnipotent_chambers():
@@ -354,14 +344,12 @@ def render_omnipotent_chambers():
         st.title("⚖️ Alpha Apex")
         st.caption("Omnipotence Edition v21.0")
         
-        # Shader Controller
-        st.subheader("🎨 UI Shader Engine")
         ui_mode = st.radio("Shader Selection", ["Dark Mode", "Light Mode"], horizontal=True)
         apply_omnipotence_shaders(ui_mode)
         
         st.divider()
-        st.subheader("🏛️ Consultation Protocol")
-        target_lang = st.selectbox("🌐 Lexical Language", list(languages.keys()))
+        st.subheader("🏛️ Protocol")
+        target_lang = st.selectbox("🌐 Language", list(languages.keys()))
         l_code = languages[target_lang]
         
         st.divider()
@@ -391,103 +379,54 @@ def render_omnipotent_chambers():
             if dispatch_secure_email_report(cur_email, st.session_state.active_chamber, log_to_send):
                 st.toast("Legal Brief Dispatched Successfully!"); time.sleep(1)
 
-        if st.button("🚪 Hard System Logout"):
+        if st.button("🚪 Hard Logout"):
             for session_key in list(st.session_state.keys()): del st.session_state[session_key]
             portal_auth.logout(); st.rerun()
 
-    # --- MAIN VIEWPORT: CONSULTATION ROOM ---
+    # --- MAIN VIEWPORT ---
     st.header(f"💼 Case Room: {st.session_state.active_chamber}")
-    st.info("System optimized for Pakistan Penal Code (PPC) and Civil Procedure Code (CPC) analysis.")
-
-    # Render Persistent Transactional History
+    
     transaction_log = db_fetch_historical_context(st.session_state.user_email, st.session_state.active_chamber)
     for msg in transaction_log:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+        with st.chat_message(msg["role"]): st.write(msg["content"])
 
-    st.write("") # Visual Spacing
+    st.write("") 
     
-    # --- RESTORED: SIDE-BY-SIDE PROMPT & VOICE ---
+    # --- SIDE-BY-SIDE PROMPT & VOICE ---
     input_column_layout = st.columns([0.82, 0.18])
-    
     with input_column_layout[0]:
-        user_inquiry = st.text_input(
-            "Legal Fact Input", 
-            placeholder="Type your legal query or facts here...", 
-            label_visibility="collapsed", 
-            key="master_text_input"
-        )
-    
+        user_inquiry = st.text_input("Legal Fact Input", placeholder="Type your query...", label_visibility="collapsed", key="master_text_input")
     with input_column_layout[1]:
-        # Speech to text component placed precisely adjacent to text field
-        v_inquiry = speech_to_text(
-            language=l_code, 
-            key='omni_mic', 
-            just_once=True, 
-            use_container_width=True
-        )
+        v_inquiry = speech_to_text(language=l_code, key='omni_mic', just_once=True, use_container_width=True)
 
-    # Master Input Concatenation
     active_prompt = v_inquiry or user_inquiry
 
     if active_prompt:
-        # Step 1: SQL Persistence
         db_log_transaction(st.session_state.user_email, st.session_state.active_chamber, "user", active_prompt)
-        
-        with st.chat_message("user"):
-            st.write(active_prompt)
+        with st.chat_message("user"): st.write(active_prompt)
         
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing Statutes & Jurisprudence..."):
+            with st.spinner("Analyzing Statutes..."):
                 try:
-                    # Advanced IRAC Prompt Engineering
-                    prompt_logic = (
-                        "Persona: You are a Senior Advocate of the High Court of Pakistan. "
-                        "Task: Analyze the user's query with extreme legal precision. "
-                        "Strict Structure: Use IRAC (Issue, Rule, Analysis, Conclusion). "
-                        "Citations: Cite relevant sections of PPC, CrPC, CPC, or QSO where applicable. "
-                        f"Target Language: {target_lang}. \n"
-                        f"Inquiry: {active_prompt}"
-                    )
-                    
+                    prompt_logic = f"Senior Advocate Persona. Use IRAC format. Language: {target_lang}. Query: {active_prompt}"
                     ai_result = load_analytical_intelligence().invoke(prompt_logic).content
                     st.markdown(ai_result)
-                    
-                    # Step 2: SQL Persistence for AI Response
                     db_log_transaction(st.session_state.user_email, st.session_state.active_chamber, "assistant", ai_result)
-                    
-                    # Step 3: Synthesis Trigger
                     inject_neural_voice(ai_result, l_code)
                     st.rerun()
-                except Exception as ai_err:
-                    st.error(f"ANALYTICAL FAILURE: {ai_err}")
+                except Exception as ai_err: st.error(f"AI ERROR: {ai_err}")
 
 def render_omnipotent_library():
-    """Restored: Complete Digital Asset Management Dashboard."""
     st.header("📚 Virtual Jurisprudence Library")
-    st.write("Authorized legal documents and statutes are indexed here for RAG-based analysis.")
-    
-    if st.button("🔄 Rescan Local /data Directory"):
-        sync_jurisprudence_library(); st.rerun()
-        
+    if st.button("🔄 Rescan Library"): sync_jurisprudence_library(); st.rerun()
     db_conn = sqlite3.connect(SQL_DB_FILE); db_c = db_conn.cursor()
     lib_data = db_c.execute("SELECT name, size, pages, indexed_date FROM documents").fetchall()
     db_conn.close()
-    
-    if lib_data:
-        st.table(pd.DataFrame(lib_data, columns=["Filename", "File Size", "Pages", "Sync Date"]))
-    else:
-        st.warning("Jurisprudence Library is currently empty. Please upload PDFs to the /data folder.")
+    if lib_data: st.table(pd.DataFrame(lib_data, columns=["Filename", "Size", "Pages", "Sync Date"]))
 
 def render_entry_portal():
-    """RESTORED: High-Volume Multi-Authentication Entry Portal."""
     st.title("⚖️ Alpha Apex Public Gateway")
-    st.markdown("### Public Legal Intelligence Access Point")
-    
-    # Primary Login Method: Google OAuth 2.0
-    st.write("To move to **Production**, click the login button below.")
     google_profile = portal_auth.login()
-    
     if google_profile:
         st.session_state.connected = True
         st.session_state.user_email = google_profile['email']
@@ -496,39 +435,32 @@ def render_entry_portal():
         st.rerun()
 
     st.divider()
-    st.subheader("Sovereign Vault Access")
-    
-    portal_tabs = st.tabs(["🔐 Vault Login", "📝 Register New Vault"])
-    
-    with portal_tabs[0]:
-        v_email = st.text_input("Vault Email Identifier")
+    t1, t2 = st.tabs(["🔐 Vault Login", "📝 Register Vault"])
+    with t1:
+        v_email = st.text_input("Vault Email")
         v_pass = st.text_input("Vault Security Key", type="password")
-        if st.button("Authorize Vault Entry"):
+        if st.button("Authorize Entry"):
             v_name = db_verify_vault_access(v_email, v_pass)
             if v_name:
                 st.session_state.connected = True
                 st.session_state.user_email = v_email
                 st.session_state.username = v_name
                 st.rerun()
-            else:
-                st.error("ACCESS DENIED: Invalid Vault Credentials.")
-            
-    with portal_tabs[1]:
-        st.info("Local Vault registration establishes a sovereign identity on our private database.")
+            else: st.error("Access Denied.")
+    with t2:
         reg_email = st.text_input("Primary Email")
-        reg_name = st.text_input("Full Professional Name")
+        reg_name = st.text_input("Full Name")
         reg_pass = st.text_input("Define Security Key", type="password")
-        if st.button("Establish Vault Account"):
+        if st.button("Establish Account"):
             db_register_user_full(reg_email, reg_name, reg_pass)
-            st.success("VAULT ACCOUNT CREATED. Proceed to the Login tab.")
+            st.success("VAULT ACCOUNT CREATED.")
 
 # ==============================================================================
-# 6. MASTER EXECUTION ENGINE (MAIN LOOP)
+# 6. MASTER EXECUTION ENGINE
 # ==============================================================================
 
 if "connected" not in st.session_state: st.session_state.connected = False
 
-# Auto-recovery logic for returning sessions
 if not st.session_state.connected:
     try:
         check_u = portal_auth.check_authentification()
@@ -539,34 +471,12 @@ if not st.session_state.connected:
             st.rerun()
     except: pass
 
-# Global Router Logic
 if not st.session_state.connected:
     render_entry_portal()
 else:
-    # Authenticated Navigation
-    nav_route = st.sidebar.radio("Main Navigation", ["Legal Chambers", "Jurisprudence Library", "System About"])
-    
-    if nav_route == "Legal Chambers":
-        render_omnipotent_chambers()
-    elif nav_route == "Jurisprudence Library":
-        render_omnipotent_library()
+    nav_route = st.sidebar.radio("Navigation", ["Legal Chambers", "Library", "About"])
+    if nav_route == "Legal Chambers": render_omnipotent_chambers()
+    elif nav_route == "Library": render_omnipotent_library()
     else:
         st.header("ℹ️ Alpha Apex Development Credentials")
-        st.markdown("""
-        The Alpha Apex system is a specialized Legal LLM Orchestration framework developed to provide 
-        statutory analysis and IRAC-structured legal summaries.
-        """)
-        st.divider()
-        dev_team = [
-            {"Developer": "Saim Ahmed", "Focus": "System Architecture & Public Handshake"},
-            {"Developer": "Huzaifa Khan", "Focus": "Analytical Model Tuning & IRAC Logic"},
-            {"Developer": "Mustafa Khan", "Focus": "SQL RDBMS Persistence & Vault Logic"},
-            {"Developer": "Ibrahim Sohail", "Focus": "UI Shader Engine & Voice Synthesis"},
-            {"Developer": "Daniyal Faraz", "Focus": "SMTP Gateway & Quality Assurance"}
-        ]
-        st.table(dev_team)
-
-# ==============================================================================
-# END OF SCRIPT - 500+ LINES OF OMNIPOTENCE PRODUCTION CODE
-# ==============================================================================
-
+        st.table([["Saim Ahmed", "Lead"], ["Huzaifa Khan", "AI Logic"], ["Mustafa Khan", "DB Architect"], ["Ibrahim Sohail", "UX/Voice"], ["Daniyal Faraz", "SMTP Gateway"]])
