@@ -34,7 +34,7 @@ API_KEY = st.secrets["GOOGLE_API_KEY"]
 DATA_FOLDER = "data" 
 DB_PATH = "./chroma_db"
 SQL_DB_FILE = "advocate_ai_v2.db"
-MODEL_NAME = "gemini-2.0-flash" # Optimized for 2026 performance
+MODEL_NAME = "gemini-2.5-flash" # Optimized for 2026 performance
 
 # ==============================================================================
 # 2. UI STYLING & JS
@@ -365,3 +365,4 @@ else:
         * Huzaifa Khan
         * Daniyal Faraz
         """)
+
