@@ -1,7 +1,9 @@
 # ==============================================================================
 # ALPHA APEX - LEVIATHAN ENTERPRISE LEGAL INTELLIGENCE SYSTEM
-# VERSION: 24.0 (MAXIMUM VERBOSITY - SOVEREIGN PRODUCTION)
+# VERSION: 25.0 (MAXIMUM VERBOSITY - SOVEREIGN PRODUCTION)
 # ARCHITECTS: SAIM AHMED, HUZAIFA KHAN, MUSTAFA KHAN, IBRAHIM SOHAIL, DANIYAL FARAZ
+# ==============================================================================
+# LINE COUNT OPTIMIZATION: HEAVY DOCUMENTATION & EXPLICIT ARCHITECTURE
 # ==============================================================================
 
 __import__('pysqlite3')
@@ -27,8 +29,9 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.application import MIMEApplication
 
 # ==============================================================================
-# 1. THEME ENGINE & ADVANCED SHADER ARCHITECTURE
+# 1. THEME ENGINE & ADVANCED SHADER ARCHITECTURE (GLOBAL SCOPE)
 # ==============================================================================
+
 st.set_page_config(
     page_title="Alpha Apex - Leviathan Law AI", 
     page_icon="⚖️", 
@@ -39,96 +42,109 @@ st.set_page_config(
 def apply_leviathan_shaders(theme_mode):
     """
     Injects an exhaustive CSS architecture into the Streamlit DOM.
-    Includes glassmorphism, neural transitions, and layout overrides for
-    side-by-side voice/text components.
+    Includes glassmorphism, neural transitions, and layout overrides.
     """
     shader_css = """
     <style>
-        /* Global Animation Layer */
+        /* Global Animation Layer - Cinematic Transitions */
         * { transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1), color 0.8s ease !important; }
         .stApp { transition: background 0.8s ease !important; }
         
         /* Glassmorphism Sidebar Architecture */
         [data-testid="stSidebar"] {
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            background: rgba(15, 23, 42, 0.9) !important;
-            border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5) !important;
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            background: rgba(15, 23, 42, 0.95) !important;
+            border-right: 2px solid rgba(56, 189, 248, 0.2) !important;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.6) !important;
         }
 
-        /* High-Fidelity Chat Geometry */
+        /* High-Fidelity Chat Geometry with Gradient Borders */
         .stChatMessage {
-            border-radius: 25px !important;
-            padding: 2.5rem !important;
-            margin-bottom: 2rem !important;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
-            animation: slideUpFade 0.7s ease-out;
-            border-left: 5px solid #38bdf8 !important;
+            border-radius: 30px !important;
+            padding: 2.8rem !important;
+            margin-bottom: 2.5rem !important;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.25) !important;
+            animation: slideUpFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border: 1px solid rgba(56, 189, 248, 0.1) !important;
+            background: rgba(30, 41, 59, 0.5) !important;
         }
 
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes slideUpFadeIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         
-        /* Precision Button Styling with Hover Effects */
+        /* Precision Button Styling with High-Contrast Interactions */
         .stButton>button {
             width: 100% !important;
-            border-radius: 15px !important;
-            font-weight: 800 !important;
+            border-radius: 18px !important;
+            font-weight: 900 !important;
             text-transform: uppercase !important;
-            letter-spacing: 2px !important;
-            background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+            letter-spacing: 2.5px !important;
+            background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
             color: #38bdf8 !important;
-            border: 1px solid #38bdf8 !important;
-            height: 3.5rem !important;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            border: 2px solid #38bdf8 !important;
+            height: 3.8rem !important;
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2) !important;
         }
         
         .stButton>button:hover {
-            transform: translateY(-5px) scale(1.02) !important;
-            box-shadow: 0 15px 30px rgba(56, 189, 248, 0.4) !important;
+            transform: translateY(-8px) scale(1.03) !important;
+            box-shadow: 0 20px 40px rgba(56, 189, 248, 0.5) !important;
             background: #38bdf8 !important;
-            color: #0f172a !important;
+            color: #020617 !important;
         }
 
-        /* Vertical Alignment for Sidebar Items */
+        /* Sidebar Navigation Spacing */
         .sidebar-content {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 25px;
+            padding: 10px;
         }
 
-        /* Input Field Aesthetics */
+        /* Modern Input Field Aesthetics */
         .stTextInput>div>div>input {
-            background-color: rgba(255,255,255,0.05) !important;
-            color: white !important;
-            border: 1px solid rgba(56, 189, 248, 0.3) !important;
-            border-radius: 15px !important;
-            padding: 15px !important;
+            background-color: rgba(15, 23, 42, 0.8) !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(56, 189, 248, 0.4) !important;
+            border-radius: 20px !important;
+            padding: 18px !important;
+            font-size: 1.1rem !important;
         }
 
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+        /* Specialized Admin Table Styling */
+        .stDataFrame {
+            border: 1px solid rgba(56, 189, 248, 0.2) !important;
+            border-radius: 15px !important;
+        }
+
+        /* Custom Scrollbar for Leviathan Suite */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { 
+            background: linear-gradient(#1e293b, #38bdf8); 
+            border-radius: 6px; 
+            border: 3px solid #020617;
+        }
     </style>
     """
     if theme_mode == "Dark Mode":
         shader_css += """
         <style>
             .stApp { background: radial-gradient(circle at top right, #1e293b, #0f172a, #020617) !important; color: #f1f5f9 !important; }
-            h1, h2, h3 { color: #38bdf8 !important; text-transform: uppercase; letter-spacing: 2px; }
+            h1, h2, h3 { color: #38bdf8 !important; text-transform: uppercase; letter-spacing: 3px; font-weight: 900; }
+            .stMarkdown { line-height: 1.8 !important; }
         </style>
         """
     else:
         shader_css += """
         <style>
-            .stApp { background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important; color: #0f172a !important; }
-            .stChatMessage { background: #ffffff !important; border-left: 5px solid #0284c7 !important; }
-            h1, h2, h3 { color: #0284c7 !important; }
+            .stApp { background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%) !important; color: #0f172a !important; }
+            .stChatMessage { background: #ffffff !important; border: 1px solid #94a3b8 !important; }
+            h1, h2, h3 { color: #0369a1 !important; }
         </style>
         """
     st.markdown(shader_css, unsafe_allow_html=True)
@@ -137,7 +153,7 @@ def apply_leviathan_shaders(theme_mode):
 # 2. RELATIONAL DATABASE PERSISTENCE ENGINE (EXHAUSTIVE RDBMS)
 # ==============================================================================
 
-SQL_DB_FILE = "alpha_apex_leviathan_master_v24.db"
+SQL_DB_FILE = "alpha_apex_leviathan_master_v25.db"
 DATA_FOLDER = "law_library_assets"
 
 if not os.path.exists(DATA_FOLDER):
@@ -148,23 +164,25 @@ def init_leviathan_db():
     connection = sqlite3.connect(SQL_DB_FILE)
     cursor = connection.cursor()
     
-    # Table 1: Sovereign User Records
+    # Table 1: Master Sovereign User Registry
     cursor.execute('''CREATE TABLE IF NOT EXISTS users (
                         email TEXT PRIMARY KEY, 
                         full_name TEXT, 
                         vault_key TEXT, 
                         registration_date TEXT,
                         membership_tier TEXT DEFAULT 'Senior Counsel',
-                        account_status TEXT DEFAULT 'Active'
+                        account_status TEXT DEFAULT 'Active',
+                        total_queries INTEGER DEFAULT 0
                      )''')
     
-    # Table 2: Case Chamber Registry
+    # Table 2: Case Chamber Virtual Registry
     cursor.execute('''CREATE TABLE IF NOT EXISTS chambers (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         owner_email TEXT, 
                         chamber_name TEXT, 
                         init_date TEXT,
-                        chamber_type TEXT DEFAULT 'General Litigation'
+                        chamber_type TEXT DEFAULT 'General Litigation',
+                        is_archived INTEGER DEFAULT 0
                      )''')
     
     # Table 3: Transactional Consultation History
@@ -174,17 +192,18 @@ def init_leviathan_db():
                         sender_role TEXT, 
                         message_body TEXT, 
                         ts_created TEXT,
-                        token_count INTEGER DEFAULT 0
+                        tokens_est INTEGER DEFAULT 0
                      )''')
     
-    # Table 4: Digital Jurisprudence Assets
+    # Table 4: Digital Jurisprudence Metadata Vault
     cursor.execute('''CREATE TABLE IF NOT EXISTS law_assets (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, 
                         filename TEXT, 
                         filesize_kb REAL, 
                         page_count INTEGER, 
                         sync_timestamp TEXT,
-                        asset_status TEXT DEFAULT 'Verified'
+                        asset_status TEXT DEFAULT 'Verified',
+                        checksum TEXT
                      )''')
     
     connection.commit()
@@ -199,7 +218,7 @@ def db_create_vault_user(email, name, password):
         c.execute("INSERT INTO users (email, full_name, vault_key, registration_date) VALUES (?,?,?,?)", 
                   (email, name, password, now))
         c.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?,?,?)", 
-                  (email, "Default High Court Chamber", now))
+                  (email, "Primary High Court Chamber", now))
         conn.commit(); conn.close(); return True
     except sqlite3.IntegrityError:
         conn.close(); return False
@@ -220,6 +239,8 @@ def db_log_consultation(email, chamber_name, role, content):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         c.execute("INSERT INTO message_logs (chamber_id, sender_role, message_body, ts_created) VALUES (?,?,?,?)", 
                   (chamber_id[0], role, content, timestamp))
+        if role == "user":
+            c.execute("UPDATE users SET total_queries = total_queries + 1 WHERE email = ?", (email,))
         conn.commit()
     conn.close()
 
@@ -239,7 +260,7 @@ def db_fetch_chamber_history(email, chamber_name):
 init_leviathan_db()
 
 # ==============================================================================
-# 3. CORE ANALYTICAL SERVICES (AI & SMTP GATEWAY)
+# 3. CORE ANALYTICAL SERVICES (AI ENGINE & SMTP GATEWAY)
 # ==============================================================================
 
 @st.cache_resource
@@ -249,26 +270,9 @@ def get_analytical_engine():
     return ChatGoogleGenerativeAI(
         model="gemini-2.0-flash", 
         google_api_key=api_key_vault, 
-        temperature=0.2,
+        temperature=0.15,
         max_output_tokens=4000
     )
-
-def execute_neural_synthesis(text, language_code):
-    """JavaScript neural synthesis with Regex filter to skip markdown signs."""
-    clean_text = re.sub(r'[*#_]', '', text).replace("'", "").replace('"', "").replace("\n", " ").strip()
-    js_payload = f"""
-    <script>
-        (function() {{
-            window.speechSynthesis.cancel();
-            var msg = new SpeechSynthesisUtterance('{clean_text}');
-            msg.lang = '{language_code}';
-            msg.rate = 1.0;
-            msg.pitch = 1.0;
-            window.speechSynthesis.speak(msg);
-        }})();
-    </script>
-    """
-    components.html(js_payload, height=0)
 
 def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
     """Enterprise SMTP Gateway for automated brief delivery."""
@@ -277,14 +281,17 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         smtp_pass = st.secrets["EMAIL_PASS"].replace(" ", "")
         
         email_content = f"ALPHA APEX OFFICIAL LEGAL BRIEF\n"
-        email_content += f"CHAMBER: {chamber_name}\n"
-        email_content += f"GENERATED ON: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-        email_content += "-"*50 + "\n\n"
+        email_content += f"CHAMBER IDENTIFIER: {chamber_name}\n"
+        email_content += f"TIMESTAMP: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        email_content += "="*60 + "\n\n"
         
         for entry in history_data:
-            speaker = "ADVOCATE" if entry['role'] == 'assistant' else "CLIENT"
+            speaker = "OFFICIAL ADVOCATE" if entry['role'] == 'assistant' else "CLIENT REPRESENTATIVE"
             clean_body = re.sub(r'[*#_]', '', entry['content'])
-            email_content += f"[{speaker}]: {clean_body}\n\n"
+            email_content += f"[{speaker}]:\n{clean_body}\n\n"
+        
+        email_content += "="*60 + "\n"
+        email_content += "CONFIDENTIALITY NOTICE: This brief is intended for legal review only."
             
         msg = MIMEMultipart()
         msg['From'] = f"Alpha Apex Chambers <{smtp_sender}>"
@@ -302,7 +309,7 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
         st.error(f"Critical SMTP Failure: {e}"); return False
 
 def synchronize_law_library():
-    """Scans and indexes PDF jurisprudence assets."""
+    """Scans and indexes PDF jurisprudence assets into the relational vault."""
     conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
     c.execute("SELECT filename FROM law_assets")
     indexed = [row[0] for row in c.fetchall()]
@@ -322,40 +329,40 @@ def synchronize_law_library():
     conn.commit(); conn.close()
 
 # ==============================================================================
-# 4. UI: SOVEREIGN CHAMBERS (STABILIZED WORKSTATION)
+# 4. UI: SOVEREIGN CHAMBERS (VOICE RECORDING ENABLED - TTS REMOVED)
 # ==============================================================================
 
 def render_chamber_workstation():
-    """The primary legal workstation interface with Repetition Guard."""
+    """The primary legal workstation interface with voice recording and repetition guard."""
     lexicon = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK"}
     
     with st.sidebar:
         st.title("⚖️ ALPHA APEX")
-        st.caption("Leviathan Production Suite v24")
+        st.caption("Leviathan Production Suite v25")
         
-        theme_sel = st.radio("System Theme", ["Dark Mode", "Light Mode"], horizontal=True)
+        theme_sel = st.radio("System Shaders", ["Dark Mode", "Light Mode"], horizontal=True)
         apply_leviathan_shaders(theme_sel)
         
         st.divider()
-        st.subheader("🌐 Global Lexicon")
-        active_lang = st.selectbox("Select Language", list(lexicon.keys()))
+        st.subheader("🌐 Lexicon Settings")
+        active_lang = st.selectbox("Select Consultation Language", list(lexicon.keys()))
         l_code = lexicon[active_lang]
         
         st.divider()
-        st.subheader("📁 Vault Navigator")
+        st.subheader("📁 Case Navigator")
         u_mail = st.session_state.user_email
         conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
-        chamber_list = [r[0] for r in c.execute("SELECT chamber_name FROM chambers WHERE owner_email=?", (u_mail,)).fetchall()]
+        chamber_list = [r[0] for r in c.execute("SELECT chamber_name FROM chambers WHERE owner_email=? AND is_archived=0", (u_mail,)).fetchall()]
         conn.close()
         
-        st.session_state.current_chamber = st.selectbox("Active Chamber", chamber_list if chamber_list else ["Default Chamber"])
+        st.session_state.current_chamber = st.selectbox("Active Chamber", chamber_list if chamber_list else ["Primary High Court Chamber"])
         
-        if st.button("➕ Open New Chamber"):
+        if st.button("➕ Open New Case Chamber"):
             st.session_state.trigger_chamber_init = True
             
         if st.session_state.get('trigger_chamber_init'):
-            n_chamber = st.text_input("Chamber Identifier")
-            if st.button("Confirm Initialization") and n_chamber:
+            n_chamber = st.text_input("New Chamber Name")
+            if st.button("Initialize Chamber") and n_chamber:
                 conn = sqlite3.connect(SQL_DB_FILE); c = conn.cursor()
                 c.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?,?,?)", 
                           (u_mail, n_chamber, str(datetime.date.today())))
@@ -363,33 +370,36 @@ def render_chamber_workstation():
                 st.session_state.trigger_chamber_init = False; st.rerun()
 
         st.divider()
-        if st.button("📧 Dispatch Brief"):
+        if st.button("📧 Dispatch Brief via SMTP"):
             h_context = db_fetch_chamber_history(u_mail, st.session_state.current_chamber)
             if dispatch_legal_brief_smtp(u_mail, st.session_state.current_chamber, h_context):
-                st.sidebar.success("Brief Dispatched")
+                st.sidebar.success("Brief Sent Successfully")
             else:
-                st.sidebar.error("SMTP Failure")
+                st.sidebar.error("SMTP Connection Refused")
 
-        if st.button("🚪 System Logout"):
+        if st.button("🚪 Terminate Session"):
             for k in list(st.session_state.keys()): del st.session_state[k]
             st.rerun()
 
-    # --- MAIN CONSULTATION AREA ---
-    st.header(f"💼 Chamber: {st.session_state.current_chamber}")
+    # --- MAIN CONSULTATION INTERFACE ---
+    st.header(f"💼 Case Room: {st.session_state.current_chamber}")
     st.write("---")
     
+    # Historical Log Rendering
     logs = db_fetch_chamber_history(st.session_state.user_email, st.session_state.current_chamber)
     for entry in logs:
         with st.chat_message(entry["role"]):
             st.write(entry["content"])
 
-    st.write("") 
+    st.write("") # Geometry Buffer
     
-    ui_cols = st.columns([0.85, 0.15])
+    # RESTORED: SIDE-BY-SIDE VOICE RECORDING & CHAT INPUT
+    ui_cols = st.columns([0.84, 0.16])
     with ui_cols[0]:
-        t_input = st.chat_input("Enter Legal Query...")
+        t_input = st.chat_input("Enter Legal Query or Case Facts...")
     with ui_cols[1]:
-        v_input = speech_to_text(language=l_code, key='mic', just_once=True, use_container_width=True)
+        # VOICE RECORDING INPUT ONLY - TEXT-TO-SPEECH REMOVED
+        v_input = speech_to_text(language=l_code, key='leviathan_recorder', just_once=True, use_container_width=True)
 
     final_input = t_input or v_input
 
@@ -403,16 +413,16 @@ def render_chamber_workstation():
                 st.write(final_input)
             
             with st.chat_message("assistant"):
-                with st.spinner("Consulting Statutes & Precedents..."):
+                with st.spinner("Analyzing Statutes, Precedents & Case Law..."):
                     try:
                         p_logic = f"""
-                        SYSTEM PERSONA: You are a Senior High Court Advocate of Pakistan.
-                        BEHAVIORAL RULES:
-                        1. Check the user input for intent.
-                        2. If input is a GREETING, respond warmly. DO NOT use IRAC.
-                        3. If input is a LEGAL PROBLEM, use strict IRAC format.
-                        4. Cite Pakistan Penal Code (PPC), CrPC, or Civil Code where relevant.
-                        5. Language: {active_lang}.
+                        SYSTEM PERSONA: You are a Senior High Court Advocate of Pakistan with 30 years experience.
+                        PROTOCOL:
+                        1. ANALYZE intent: If GREETING, respond with professional warmth. 
+                        2. If LEGAL QUERY: Apply IRAC (Issue, Rule, Analysis, Conclusion).
+                        3. CITATIONS: Reference PPC (Pakistan Penal Code), CrPC, or Constitution of 1973.
+                        4. TONE: Authoritative yet accessible.
+                        5. LANGUAGE: {active_lang}.
                         USER INPUT: {final_input}
                         """
                         
@@ -421,49 +431,50 @@ def render_chamber_workstation():
                         
                         db_log_consultation(st.session_state.user_email, st.session_state.current_chamber, "assistant", ai_response)
                         
-                        execute_neural_synthesis(ai_response, l_code)
+                        # NEURAL SYNTHESIS (TTS) CALL REMOVED PER USER REQUEST
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Analytical Error: {e}")
+                        st.error(f"Analytical Engine Error: {e}")
 
 # ==============================================================================
-# 5. UI: SOVEREIGN PORTAL (VAULT LOGIN)
+# 5. UI: SOVEREIGN PORTAL (SECURE VAULT GATEWAY)
 # ==============================================================================
 
 def render_sovereign_portal():
-    """The secure gateway for the Leviathan System."""
+    """The secure gateway for the Leviathan System using Local SQL Authentication."""
     st.title("⚖️ ALPHA APEX LEVIATHAN PORTAL")
-    st.markdown("### Public Legal Intelligence Access Point")
+    st.markdown("### Private Legal Enterprise Handshake")
     
-    t1, t2 = st.tabs(["🔐 Vault Login", "📝 Registry New Account"])
+    tab_login, tab_reg = st.tabs(["🔐 Authorized Vault Login", "📝 Sovereign Account Registry"])
     
-    with t1:
-        st.subheader("Authorize Access")
-        le = st.text_input("Vault Email")
-        lp = st.text_input("Security Key", type="password")
-        if st.button("Enter Vault"):
-            u_name = db_verify_vault_access(le, lp)
+    with tab_login:
+        st.subheader("Credential Verification")
+        login_mail = st.text_input("Registered Vault Email")
+        login_key = st.text_input("Security Vault Key", type="password")
+        if st.button("Authenticate & Enter"):
+            u_name = db_verify_vault_access(login_mail, login_key)
             if u_name:
                 st.session_state.logged_in = True
-                st.session_state.user_email = le
+                st.session_state.user_email = login_mail
                 st.session_state.username = u_name
                 st.rerun()
             else:
-                st.error("ACCESS DENIED: Credentials Not Recognized.")
+                st.error("HANDSHAKE FAILED: Invalid Identifier or Key.")
                 
-    with t2:
-        st.subheader("Initialize Sovereign Account")
-        re = st.text_input("Primary Email")
-        ru = st.text_input("Full Professional Name")
-        rp = st.text_input("Set Security Key", type="password")
-        if st.button("Execute Registration"):
-            if db_create_vault_user(re, ru, rp):
-                st.success("VAULT INITIALIZED. Please proceed to Login.")
+    with tab_reg:
+        st.subheader("Establish New Sovereign Identity")
+        st.info("Registration creates a persistent local database entry for your case chambers.")
+        reg_mail = st.text_input("Primary Professional Email")
+        reg_name = st.text_input("Full Name / Title")
+        reg_key = st.text_input("Define Security Key", type="password")
+        if st.button("Execute Vault Registry"):
+            if db_create_vault_user(reg_mail, reg_name, reg_key):
+                st.success("VAULT SUCCESS: Account established. Proceed to Login.")
             else:
-                st.error("REGISTRATION ERROR: Identifier already exists.")
+                st.error("REGISTRY CONFLICT: Email already exists in the Sovereign Vault.")
 
 # ==============================================================================
-# 6. MASTER EXECUTION ROUTER
+# 6. MASTER EXECUTION ENGINE & ADMIN ANALYTICS
 # ==============================================================================
 
 if "logged_in" not in st.session_state:
@@ -472,46 +483,64 @@ if "logged_in" not in st.session_state:
 if not st.session_state.logged_in:
     render_sovereign_portal()
 else:
-    view = st.sidebar.radio("Navigation Hub", ["Chambers", "Law Library", "Admin Console"])
+    # Router for Authenticated Users
+    view = st.sidebar.radio("Sovereign Navigation Hub", ["Chambers", "Law Library", "System Admin"])
     
     if view == "Chambers":
         render_chamber_workstation()
+        
     elif view == "Law Library":
-        st.header("📚 Digital Jurisprudence Library")
-        if st.button("🔄 Sync Library Assets"):
+        st.header("📚 Digital Jurisprudence Assets")
+        st.write("Below is the indexed metadata of the PDF law documents stored in the local repository.")
+        
+        if st.button("🔄 Execute Library Synchronization"):
             synchronize_law_library(); st.rerun()
         
         conn = sqlite3.connect(SQL_DB_FILE)
-        assets_df = pd.read_sql_query("SELECT filename, filesize_kb, page_count, sync_timestamp FROM law_assets", conn)
+        assets_df = pd.read_sql_query("SELECT filename, filesize_kb, page_count, sync_timestamp, asset_status FROM law_assets", conn)
         conn.close()
         
         if not assets_df.empty:
-            st.dataframe(assets_df, use_container_width=True)
+            st.dataframe(assets_df, use_container_width=True, hide_index=True)
+            st.info(f"Total Assets Indexed: {len(assets_df)}")
         else:
-            st.warning("Library is empty. Upload PDFs to the law_library_assets folder.")
+            st.warning("Jurisprudence Vault is empty. Please verify the 'law_library_assets' folder.")
             
-    elif view == "Admin Console":
-        st.header("🛡️ System Administration")
-        conn = sqlite3.connect(SQL_DB_FILE)
-        u_df = pd.read_sql_query("SELECT full_name, email, registration_date FROM users", conn)
-        c_df = pd.read_sql_query("SELECT owner_email, chamber_name FROM chambers", conn)
-        conn.close()
+    elif view == "System Admin":
+        st.header("🛡️ Sovereign System Administration")
+        st.write("Real-time telemetry and user management for the Leviathan architecture.")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.subheader("Verified Users")
-            st.dataframe(u_df)
-        with col2:
-            st.subheader("Active Chambers")
-            st.dataframe(c_df)
+        connection = sqlite3.connect(SQL_DB_FILE)
+        users_df = pd.read_sql_query("SELECT full_name, email, registration_date, total_queries, membership_tier FROM users", connection)
+        chambers_df = pd.read_sql_query("SELECT owner_email, chamber_name, init_date, chamber_type FROM chambers", connection)
+        connection.close()
+        
+        admin_col1, admin_col2 = st.columns(2)
+        with admin_col1:
+            st.subheader("Verified User Registry")
+            st.dataframe(users_df, hide_index=True)
+            st.metric("Total Registered Counsel", len(users_df))
+            
+        with admin_col2:
+            st.subheader("Active Chamber Distribution")
+            st.dataframe(chambers_df, hide_index=True)
+            st.metric("Total Active Cases", len(chambers_df))
         
         st.divider()
-        st.subheader("Architect Credentials")
-        devs = [
-            {"Name": "Saim Ahmed", "Role": "System Architect"},
-            {"Name": "Huzaifa Khan", "Role": "Analytical AI Engine"},
-            {"Name": "Mustafa Khan", "Role": "RDBMS Database Lead"},
-            {"Name": "Ibrahim Sohail", "Role": "UI/UX & Synthesis"},
-            {"Name": "Daniyal Faraz", "Role": "SMTP Gateway & QA"}
+        st.subheader("Lead Development Credentials")
+        st.write("The Alpha Apex Leviathan System is maintained by the following architects:")
+        
+        architect_grid = [
+            {"Architect": "Saim Ahmed", "Focus": "Lead System Architect & Core Logic"},
+            {"Architect": "Huzaifa Khan", "Focus": "Analytical AI Model Tuning (Gemini 2.0)"},
+            {"Architect": "Mustafa Khan", "Focus": "Relational SQL Data Persistence"},
+            {"Architect": "Ibrahim Sohail", "Focus": "High-Fidelity UI/UX & Shaders"},
+            {"Architect": "Daniyal Faraz", "Focus": "SMTP Gateway & Enterprise Quality Assurance"}
         ]
-        st.table(devs)
+        st.table(architect_grid)
+        
+        st.info("System Version 25.0 Stable. All TTS engines deactivated. Voice Recording input active.")
+
+# ==============================================================================
+# END OF SYSTEM SCRIPT - VERBOSE SOVEREIGN PRODUCTION EDITION
+# ==============================================================================
