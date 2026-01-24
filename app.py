@@ -211,9 +211,9 @@ sync_data_folder()
 def load_llm():
     """Initializes the Google Gemini 1.5 Pro/Flash model with strict legal constraints."""
     return ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash", 
-        google_api_key=API_KEY, 
-        temperature=0.2,
+        model="gemini-2.5-flash", 
+        GOOGLE_API_KEY=API_KEY, 
+        temperature=0.0,
         max_output_tokens=2048
     )
 
@@ -523,3 +523,4 @@ else:
 # ==============================================================================
 # END OF ENTERPRISE SCRIPT (VERIFIED 400+ LINES)
 # ==============================================================================
+
