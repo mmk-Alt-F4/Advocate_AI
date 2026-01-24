@@ -24,22 +24,22 @@ st.set_page_config(page_title="Alpha Apex", page_icon="⚖️", layout="wide")
 
 API_KEY = st.secrets["GOOGLE_API_KEY"]
 SQL_DB_FILE = "advocate_ai_v3.db"
+DATA_FOLDER = "data"
+
+if not os.path.exists(DATA_FOLDER):
+    os.makedirs(DATA_FOLDER)
 
 def init_sql_db():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    # Users Table
     c.execute('CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, username TEXT, password TEXT, joined_date TEXT)')
     c.execute("PRAGMA table_info(users)")
     columns = [info[1] for info in c.fetchall()]
     if 'password' not in columns:
         c.execute('ALTER TABLE users ADD COLUMN password TEXT DEFAULT ""')
 
-    # Cases & History Tables
     c.execute('CREATE TABLE IF NOT EXISTS cases (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, case_name TEXT, created_at TEXT)')
     c.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, case_id INTEGER, role TEXT, content TEXT, timestamp TEXT)')
-    
-    # Vectorized Documents Table
     c.execute('''CREATE TABLE IF NOT EXISTS documents 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, size TEXT, pages INTEGER, indexed TEXT)''')
     conn.commit()
@@ -92,15 +92,28 @@ def db_get_docs():
     conn.close()
     return data
 
-def db_add_doc(name, size, pages):
+def sync_data_folder():
     conn = sqlite3.connect(SQL_DB_FILE)
     c = conn.cursor()
-    c.execute("INSERT INTO documents (name, size, pages, indexed) VALUES (?, ?, ?, ?)", 
-              (name, size, pages, "✅ Indexed"))
+    existing_docs = [row[0] for row in c.execute("SELECT name FROM documents").fetchall()]
+    
+    if os.path.exists(DATA_FOLDER):
+        for filename in os.listdir(DATA_FOLDER):
+            if filename.endswith(".pdf") and filename not in existing_docs:
+                path = os.path.join(DATA_FOLDER, filename)
+                try:
+                    reader = PdfReader(path)
+                    pages = len(reader.pages)
+                    size = f"{os.path.getsize(path) / 1024:.1f} KB"
+                    c.execute("INSERT INTO documents (name, size, pages, indexed) VALUES (?, ?, ?, ?)", 
+                              (filename, size, pages, "✅ Indexed"))
+                except:
+                    continue
     conn.commit()
     conn.close()
 
 init_sql_db()
+sync_data_folder()
 
 # ==============================================================================
 # 2. CORE UTILITIES
@@ -113,13 +126,11 @@ def send_email_report(receiver_email, case_name, history):
         for m in history:
             role = "Counsel" if m['role'] == 'assistant' else "Client"
             report_content += f"[{role}]: {m['content']}\n\n"
-        
         msg = MIMEMultipart()
         msg['From'] = f"Alpha Apex <{sender_email}>"
         msg['To'] = receiver_email
         msg['Subject'] = f"Legal Summary: {case_name}"
         msg.attach(MIMEText(report_content, 'plain'))
-        
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(sender_email, sender_password)
@@ -168,7 +179,7 @@ except Exception as e:
     st.stop()
 
 # ==============================================================================
-# 4. CHAMBERS (RESTORED)
+# 4. CHAMBERS
 # ==============================================================================
 def render_chambers():
     langs = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK", "Pashto": "ps-PK", "Balochi": "bal-PK"}
@@ -245,40 +256,36 @@ def render_chambers():
                 st.error(f"Error: {e}")
 
 # ==============================================================================
-# 5. LIBRARY (RESTORED + VECTOR SYNC)
+# 5. LIBRARY & ABOUT
 # ==============================================================================
 def render_library():
     st.header("📚 Legal Library & Vector Index")
+    st.subheader("📑 Vectorized Document Index (Synced with /data)")
     
-    # PDF Processing Section
-    with st.expander("📤 Upload & Vectorize New Law Books", expanded=False):
-        uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
-        if uploaded_file and st.button("Process & Index"):
-            with st.spinner("Vectorizing..."):
-                reader = PdfReader(uploaded_file)
-                db_add_doc(uploaded_file.name, f"{uploaded_file.size/1024:.1f} KB", len(reader.pages))
-                st.success("Indexed successfully!")
-                st.rerun()
-
-    st.subheader("📑 Vectorized Document Index")
+    if st.button("🔄 Sync Data Folder"):
+        sync_data_folder()
+        st.rerun()
+        
     docs = db_get_docs()
     if docs:
         df = pd.DataFrame(docs, columns=["File Name", "Size", "Pages", "Status"])
         st.table(df)
-    else: st.info("No documents vectorized.")
+    else:
+        st.info("No documents found in /data folder.")
 
     st.divider()
+    st.subheader("⚖️ Primary Legal Statutes")
     t1, t2, t3 = st.tabs(["Criminal Law", "Civil Law", "Constitution"])
     with t1:
-        st.write("**PPC 1860**, **CrPC 1898**")
+        st.write("**Pakistan Penal Code (PPC) 1860**")
+        st.write("**Code of Criminal Procedure (CrPC) 1898**")
     with t2:
-        st.write("**CPC 1908**, **Contract Act 1872**, **QSO 1984**")
+        st.write("**Civil Procedure Code (CPC) 1908**")
+        st.write("**Contract Act 1872**")
+        st.write("**Qanun-e-Shahadat Order (QSO) 1984**")
     with t3:
-        st.write("**Constitution 1973**")
+        st.write("**Constitution of Pakistan 1973**")
 
-# ==============================================================================
-# 6. ABOUT (RESTORED)
-# ==============================================================================
 def render_about():
     st.header("ℹ️ About Alpha Apex")
     team = [
@@ -291,7 +298,7 @@ def render_about():
     st.table(team)
 
 # ==============================================================================
-# 7. LOGIN / MAIN FLOW
+# 6. LOGIN / SIGNUP PAGE
 # ==============================================================================
 def render_login():
     st.title("⚖️ Alpha Apex Login")
@@ -302,28 +309,35 @@ def render_login():
         if user_info:
             st.session_state.logged_in = True
             st.session_state.user_email = user_info['email']
-            st.session_state.username = user_info.get('name', 'User')
+            st.session_state.username = user_info.get('name', user_info['email'].split('@')[0])
             db_register_user(st.session_state.user_email, st.session_state.username)
             st.rerun()
 
     with tab2:
-        mode = st.radio("Mode", ["Login", "Signup"], horizontal=True)
+        mode = st.radio("Select Mode", ["Login", "Signup"], horizontal=True)
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
+        
         if mode == "Signup":
             name = st.text_input("Full Name")
-            if st.button("Create"):
-                db_register_user(email, name, password)
-                st.success("Created!")
+            if st.button("Create Account"):
+                if "@" in email and password and name:
+                    db_register_user(email, name, password)
+                    st.success("Account created! Switch to Login mode.")
+                else: st.error("Please fill all fields correctly.")
         else:
             if st.button("Login"):
-                user = db_check_login(email, password)
-                if user:
+                username = db_check_login(email, password)
+                if username:
                     st.session_state.logged_in = True
                     st.session_state.user_email = email
-                    st.session_state.username = user
+                    st.session_state.username = username
                     st.rerun()
+                else: st.error("Invalid credentials.")
 
+# ==============================================================================
+# 7. MAIN FLOW
+# ==============================================================================
 if "logged_in" not in st.session_state: st.session_state.logged_in = False
 
 if not st.session_state.logged_in:
