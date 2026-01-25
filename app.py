@@ -306,7 +306,7 @@ def get_analytical_engine():
     return ChatGoogleGenerativeAI(
         model="gemini-2.5-flash", 
         GOOGLE_API_KEY=st.secrets["GOOGLE_API_KEY"], 
-        temperature=0.15,
+        temperature=0.0,
         max_output_tokens=3000
     )
 
@@ -525,6 +525,7 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
 
