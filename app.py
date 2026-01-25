@@ -465,7 +465,7 @@ def render_chamber_workstation():
                         # Constructing Sovereign Instruction Prompt
                         instruction = f"""
                         SYSTEM PERSONA: {custom_persona}. 
-                        STRICT BOUNDARY: Answer ONLY queries related to Constitutional Law, Civil Law, Criminal Procedure, or Legal Strategy. 
+                        STRICT BOUNDARY: Answer ONLY queries related to Constitutional Law, Civil Law, Criminal Procedure, or Legal Strategy. Accept All types of greetings and reply to them with an apppropriate salutation 
                         If the query is outside these bounds, state: 'I am authorized only for legal consultation.'
                         RESPONSE LANGUAGE: {lang_choice}.
                         USER QUERY: {final_query}
@@ -588,4 +588,5 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
