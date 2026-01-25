@@ -360,6 +360,8 @@ def render_chamber_workstation():
         st.markdown("<h1 style='text-align: center; margin-top: -30px;'>⚖️</h1>", unsafe_allow_html=True)
         st.markdown("<h3 style='text-align: center;'>ALPHA APEX</h3>", unsafe_allow_html=True)
         st.divider()
+        
+        st.subheader("System Persona")
         lang_choice = st.selectbox("Language", list(lexicon.keys()))
         l_code = lexicon[lang_choice]
         st.divider()
@@ -480,6 +482,7 @@ else:
     
     if view == "Chambers":
         render_chamber_workstation()
+        
     elif view == "Law Library":
         apply_leviathan_shaders()
         st.header("📚 Law Library")
@@ -525,6 +528,7 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
 
