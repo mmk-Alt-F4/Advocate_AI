@@ -1,6 +1,6 @@
 # ==============================================================================
 # ALPHA APEX - LEVIATHAN ENTERPRISE LEGAL INTELLIGENCE SYSTEM
-# VERSION: 32.4 (PERSISTENT DATA STORAGE & INTEGRITY LOCK)
+# VERSION: 32.5 (LEGACY INTEGRATION: adovate_ai_v2.db)
 # ARCHITECTS: SAIM AHMED, HUZAIFA KHAN, MUSTAFA KHAN, IBRAHIM SOHAIL, DANIYAL FARAZ
 # ==============================================================================
 
@@ -147,11 +147,11 @@ def apply_leviathan_shaders():
     st.markdown(shader_css, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (SECURE SQLITE)
+# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (LEGACY INTEGRATION)
 # ==============================================================================
 
-# Explicitly named file to ensure data is saved to disk, not memory
-SQL_DB_FILE = "alpha_apex_secure_data.db"
+# UPDATED: Pointing to your existing persistent file
+SQL_DB_FILE = "adovate_ai_v2.db"
 DATA_FOLDER = "data"
 
 if not os.path.exists(DATA_FOLDER):
@@ -174,7 +174,7 @@ def get_db_connection():
 def init_leviathan_db():
     """
     Builds the comprehensive SQL schema with explicit transactional tables.
-    This function runs on every startup to ensure tables exist in the file.
+    Uses IF NOT EXISTS to ensure compatibility with existing legacy files.
     """
     connection = get_db_connection()
     if not connection:
@@ -639,7 +639,7 @@ def render_main_interface():
         m_cols = st.columns(3)
         m_cols[0].metric("Registered Counsel", len(u_df))
         m_cols[1].metric("Consultation Volume", u_df['total_queries'].sum())
-        m_cols[2].metric("System Version", "32.4-LEV")
+        m_cols[2].metric("System Version", "32.5-LEV")
         
         st.divider()
         st.subheader("Counsel Directory")
