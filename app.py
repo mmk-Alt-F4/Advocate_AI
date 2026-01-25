@@ -1,6 +1,6 @@
 # ==============================================================================
 # ALPHA APEX - LEVIATHAN ENTERPRISE LEGAL INTELLIGENCE SYSTEM
-# VERSION: 32.3 (UI REFERENCE ALIGNMENT & SETTINGS MIGRATION)
+# VERSION: 32.4 (PERSISTENT DATA STORAGE & INTEGRITY LOCK)
 # ARCHITECTS: SAIM AHMED, HUZAIFA KHAN, MUSTAFA KHAN, IBRAHIM SOHAIL, DANIYAL FARAZ
 # ==============================================================================
 
@@ -89,7 +89,7 @@ def apply_leviathan_shaders():
         h1, h2, h3, h4 { 
             color: #f8fafc !important; 
             font-weight: 700 !important; 
-            text-transform: none !important; /* Removed uppercase to match screenshot */
+            text-transform: none !important; 
             letter-spacing: 0.5px;
         }
         
@@ -147,21 +147,42 @@ def apply_leviathan_shaders():
     st.markdown(shader_css, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (EXPANDED LOGIC)
+# 2. RELATIONAL DATABASE PERSISTENCE ENGINE (SECURE SQLITE)
 # ==============================================================================
 
-SQL_DB_FILE = "alpha_apex_leviathan_master_v32.db"
+# Explicitly named file to ensure data is saved to disk, not memory
+SQL_DB_FILE = "alpha_apex_secure_data.db"
 DATA_FOLDER = "data"
 
 if not os.path.exists(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
 
+def get_db_connection():
+    """
+    Creates a thread-safe connection to the persistent database file.
+    Enables WAL mode for better concurrency during writes.
+    """
+    try:
+        connection = sqlite3.connect(SQL_DB_FILE, check_same_thread=False)
+        # WAL Mode helps with concurrent reads/writes in Streamlit
+        connection.execute("PRAGMA journal_mode=WAL;") 
+        return connection
+    except sqlite3.Error as e:
+        st.error(f"Critical Database Connection Failure: {e}")
+        return None
+
 def init_leviathan_db():
-    """Builds the comprehensive SQL schema with explicit transactional tables."""
-    connection = sqlite3.connect(SQL_DB_FILE)
+    """
+    Builds the comprehensive SQL schema with explicit transactional tables.
+    This function runs on every startup to ensure tables exist in the file.
+    """
+    connection = get_db_connection()
+    if not connection:
+        return
+
     cursor = connection.cursor()
     
-    # Table 1: Master User Registry
+    # Table 1: Master User Registry (Permanent Storage)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             email TEXT PRIMARY KEY, 
@@ -170,7 +191,8 @@ def init_leviathan_db():
             registration_date TEXT,
             membership_tier TEXT DEFAULT 'Senior Counsel',
             account_status TEXT DEFAULT 'Active',
-            total_queries INTEGER DEFAULT 0
+            total_queries INTEGER DEFAULT 0,
+            last_login TEXT
         )
     ''')
     
@@ -227,59 +249,83 @@ def init_leviathan_db():
 
 def db_log_event(email, event_type, desc):
     """Explicitly logs system events for admin telemetry."""
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute('''
-        INSERT INTO system_telemetry (user_email, event_type, description, event_timestamp)
-        VALUES (?, ?, ?, ?)
-    ''', (email, event_type, desc, ts))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute('''
+            INSERT INTO system_telemetry (user_email, event_type, description, event_timestamp)
+            VALUES (?, ?, ?, ?)
+        ''', (email, event_type, desc, ts))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"Logging Error: {e}")
+    finally:
+        conn.close()
 
 def db_create_vault_user(email, name, password):
-    """Registers users into the local SQL vault."""
+    """
+    Registers users into the local SQL vault.
+    Returns True if successful, False if email already exists.
+    """
     if email == "" or password == "":
         return False
     
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     try:
+        # Check for existing user first to avoid hard crashes
+        cursor.execute("SELECT email FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            conn.close()
+            return False
+
         cursor.execute('''
-            INSERT INTO users (email, full_name, vault_key, registration_date) 
-            VALUES (?, ?, ?, ?)
-        ''', (email, name, password, ts))
+            INSERT INTO users (email, full_name, vault_key, registration_date, last_login) 
+            VALUES (?, ?, ?, ?, ?)
+        ''', (email, name, password, ts, ts))
         
+        # Initialize default chamber for new user
         cursor.execute('''
             INSERT INTO chambers (owner_email, chamber_name, init_date) 
             VALUES (?, ?, ?)
         ''', (email, "General Litigation Chamber", ts))
         
         conn.commit()
-        conn.close()
         db_log_event(email, "REGISTRATION", "Account initialized")
         return True
     except sqlite3.IntegrityError:
-        conn.close()
         return False
+    except Exception as e:
+        st.error(f"Database Write Error: {e}")
+        return False
+    finally:
+        conn.close()
 
 def db_verify_vault_access(email, password):
     """Credential verification logic."""
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT full_name FROM users WHERE email=? AND vault_key=?", (email, password))
     res = cursor.fetchone()
-    conn.close()
+    
     if res:
+        # Update last login timestamp
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("UPDATE users SET last_login = ? WHERE email = ?", (ts, email))
+        conn.commit()
         db_log_event(email, "LOGIN", "Successful entry")
+        conn.close()
         return res[0]
+    
+    conn.close()
     return None
 
 def db_log_consultation(email, chamber_name, role, content):
     """Saves message with explicit ID lookup."""
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM chambers WHERE owner_email=? AND chamber_name=?", (email, chamber_name))
     c_row = cursor.fetchone()
@@ -297,7 +343,7 @@ def db_log_consultation(email, chamber_name, role, content):
 
 def db_fetch_chamber_history(email, chamber_name):
     """Retrieves context-specific logs."""
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     sql = '''
         SELECT m.sender_role, m.message_body FROM message_logs m 
@@ -310,6 +356,7 @@ def db_fetch_chamber_history(email, chamber_name):
     conn.close()
     return [{"role": r, "content": b} for r, b in rows]
 
+# Initialize Database on Script Load
 init_leviathan_db()
 
 # ==============================================================================
@@ -353,7 +400,7 @@ def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
 
 def synchronize_law_library():
     """Indexes PDF assets in the vault."""
-    conn = sqlite3.connect(SQL_DB_FILE)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT filename FROM law_assets")
     indexed = [r[0] for r in cursor.fetchall()]
@@ -417,7 +464,7 @@ def render_main_interface():
             u_mail = st.session_state.user_email
             
             # Database Fetch for Sidebar List
-            conn = sqlite3.connect(SQL_DB_FILE)
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT chamber_name FROM chambers WHERE owner_email=? AND is_archived=0", (u_mail,))
             chambers_raw = [r[0] for r in cursor.fetchall()]
@@ -454,7 +501,7 @@ def render_main_interface():
                     st.markdown("---")
                     new_name = st.text_input("New Chamber Name")
                     if st.button("Initialize Chamber") and new_name:
-                        conn = sqlite3.connect(SQL_DB_FILE)
+                        conn = get_db_connection()
                         cursor = conn.cursor()
                         ts = str(datetime.date.today())
                         cursor.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?,?,?)", (u_mail, new_name, ts))
@@ -474,9 +521,7 @@ def render_main_interface():
             horizontal=True,
             label_visibility="collapsed"
         )
-        # Note: Functional logic forces dark mode via `apply_leviathan_shaders`, 
-        # this widget is here to satisfy the visual requirement of the prompt.
-
+        
         st.write("") # Spacer to push settings to bottom
         st.write("") 
         
@@ -574,7 +619,7 @@ def render_main_interface():
             synchronize_law_library()
             st.rerun()
             
-        conn = sqlite3.connect(SQL_DB_FILE)
+        conn = get_db_connection()
         df = pd.read_sql_query("SELECT filename, filesize_kb, page_count, sync_timestamp FROM law_assets", conn)
         conn.close()
         
@@ -585,7 +630,7 @@ def render_main_interface():
         # ADMIN VIEW
         st.header("🛡️ System Administration Console")
         
-        conn = sqlite3.connect(SQL_DB_FILE)
+        conn = get_db_connection()
         u_df = pd.read_sql_query("SELECT full_name, email, membership_tier, total_queries FROM users", conn)
         t_df = pd.read_sql_query("SELECT * FROM system_telemetry ORDER BY event_id DESC LIMIT 15", conn)
         conn.close()
@@ -594,7 +639,7 @@ def render_main_interface():
         m_cols = st.columns(3)
         m_cols[0].metric("Registered Counsel", len(u_df))
         m_cols[1].metric("Consultation Volume", u_df['total_queries'].sum())
-        m_cols[2].metric("System Version", "32.3-LEV")
+        m_cols[2].metric("System Version", "32.4-LEV")
         
         st.divider()
         st.subheader("Counsel Directory")
@@ -647,7 +692,7 @@ def render_sovereign_portal():
             if db_create_vault_user(re, rn, rk):
                 st.success("Counsel Account Successfully Initialized")
             else:
-                st.error("Registration Failed: Account may already exist")
+                st.error("Registration Failed: Account may already exist or invalid input")
 
 # ==============================================================================
 # 6. MASTER EXECUTION ENGINE & SYSTEM ADMINISTRATION
