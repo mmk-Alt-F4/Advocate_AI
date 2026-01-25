@@ -426,6 +426,23 @@ def render_chamber_workstation():
             with chat_container:
                 with st.chat_message("user"):
                     st.write(final_query)
+
+
+            with st.chat_message("assistant"):
+    with st.spinner("Analyzing Statutes..."):
+        try:
+            # PROMPT INJECTION FOR CUSTOM PERSONA
+            # We use an f-string to put your 'custom_persona' directly into the command
+            full_prompt = f"""
+            SYSTEM: You are {custom_persona}. 
+            STRICT LIMIT: Answer ONLY legal, constitutional, or procedural law queries. 
+            If the user asks something else, say: "I am authorized only for legal consultation."
+            LANGUAGE: {lang_choice}.
+            USER QUERY: {final_query}
+            """
+            # The engine now receives the instruction to act as your typed persona
+            response = get_analytical_engine().invoke(full_prompt).content
+            st.markdown(response)
             
             with st.chat_message("assistant"):
                 with st.spinner("Processing Strategy..."):
@@ -528,6 +545,7 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
 
