@@ -430,8 +430,8 @@ def render_chamber_workstation():
 
             with st.chat_message("assistant"):
                 with st.spinner("Analyzing Statutes..."):
-        try:
-            # PROMPT INJECTION FOR CUSTOM PERSONA
+                   try:
+                       # PROMPT INJECTION FOR CUSTOM PERSONA
             # We use an f-string to put your 'custom_persona' directly into the command
             full_prompt = f"""
             SYSTEM: You are {custom_persona}. 
@@ -454,6 +454,8 @@ def render_chamber_workstation():
                         st.rerun()
                     except Exception as e:
                         st.error(f"AI Error: {e}")
+                       
+            
 
 # ==============================================================================
 # 5. UI: SOVEREIGN PORTAL (AUTHENTICATION)
@@ -545,6 +547,7 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
 
