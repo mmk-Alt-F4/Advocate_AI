@@ -429,7 +429,7 @@ def render_chamber_workstation():
 
 
             with st.chat_message("assistant"):
-    with st.spinner("Analyzing Statutes..."):
+                with st.spinner("Analyzing Statutes..."):
         try:
             # PROMPT INJECTION FOR CUSTOM PERSONA
             # We use an f-string to put your 'custom_persona' directly into the command
@@ -545,6 +545,7 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
 
