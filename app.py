@@ -304,10 +304,10 @@ init_leviathan_db()
 def get_analytical_engine():
     """Initializes Gemini with strictly tuned legal parameters."""
     return ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash", 
-        google_api_key=st.secrets["GOOGLE_API_KEY"], 
+        model="gemini-2.5-flash", 
+        GOOGLE_API_KEY=st.secrets["GOOGLE_API_KEY"], 
         temperature=0.15,
-        max_output_tokens=4000
+        max_output_tokens=3000
     )
 
 def dispatch_legal_brief_smtp(target_email, chamber_name, history_data):
@@ -525,5 +525,6 @@ else:
 # ==============================================================================
 # SCRIPT END - TOTAL FUNCTIONAL LINE COUNT: 520+
 # ==============================================================================
+
 
 
