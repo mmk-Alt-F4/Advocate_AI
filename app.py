@@ -281,10 +281,6 @@ def apply_leviathan_shaders():
 # SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
 # ------------------------------------------------------------------------------
 
-# ------------------------------------------------------------------------------
-# SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
-# ------------------------------------------------------------------------------
-
 def get_db_connection():
     """
     Creates a thread-safe connection to the advocate_ai_v2.db file.
@@ -307,8 +303,9 @@ def get_db_connection():
 
 def init_leviathan_db():
     """
-    Constructs the 5-Table Master Schema.
-    INCLUDES HOT-FIX: Automatically adds 'full_name' column to legacy databases.
+    Constructs/Repairs the 5-Table Master Schema.
+    FORCED REPAIR: Injects all missing columns required for v36.5 compliance 
+    without deleting existing data.
     """
     connection = get_db_connection()
     if not connection:
@@ -317,30 +314,32 @@ def init_leviathan_db():
     try:
         cursor = connection.cursor()
         
-        # --- TABLE 1: MASTER USER REGISTRY ---
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                email TEXT PRIMARY KEY, 
-                full_name TEXT, 
-                vault_key TEXT, 
-                registration_date TEXT,
-                membership_tier TEXT DEFAULT 'Senior Counsel',
-                account_status TEXT DEFAULT 'Active',
-                total_queries INTEGER DEFAULT 0,
-                last_login TEXT,
-                provider TEXT DEFAULT 'Local'
-            )
-        ''')
-        
-        # --- CRITICAL FIX: SCHEMA MIGRATION LOGIC ---
-        # This block detects if 'full_name' is missing from an old DB and adds it.
-        cursor.execute("PRAGMA table_info(users)")
-        existing_columns = [col[1] for col in cursor.fetchall()]
-        if 'full_name' not in existing_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
-            connection.commit()
+        # 1. ENSURE BASE USERS TABLE EXISTS
+        cursor.execute("CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY)")
 
-        # --- TABLE 2: CASE CHAMBERS REGISTRY ---
+        # 2. DEFINE REQUIRED USER COLUMNS AND THEIR TYPES
+        required_user_columns = {
+            "full_name": "TEXT",
+            "vault_key": "TEXT",
+            "registration_date": "TEXT",
+            "membership_tier": "TEXT DEFAULT 'Senior Counsel'",
+            "account_status": "TEXT DEFAULT 'Active'",
+            "total_queries": "INTEGER DEFAULT 0",
+            "last_login": "TEXT",
+            "provider": "TEXT DEFAULT 'Local'"
+        }
+
+        # 3. SCAN USERS SCHEMA AND INJECT MISSING PIECES
+        cursor.execute("PRAGMA table_info(users)")
+        existing_user_cols = [col[1] for col in cursor.fetchall()]
+
+        for col_name, col_type in required_user_columns.items():
+            if col_name not in existing_user_cols:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
+                connection.commit()
+
+        # 4. INITIALIZE REMAINING TABLES
+        # Table 2: Chambers Registry
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chambers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -354,7 +353,7 @@ def init_leviathan_db():
             )
         ''')
         
-        # --- TABLE 3: CONSULTATION TRANSACTION LOGS ---
+        # Table 3: Message Logs
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS message_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -367,7 +366,7 @@ def init_leviathan_db():
             )
         ''')
         
-        # --- TABLE 4: LAW ASSET METADATA VAULT ---
+        # Table 4: Law Assets
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS law_assets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -379,7 +378,7 @@ def init_leviathan_db():
             )
         ''')
         
-        # --- TABLE 5: SYSTEM TELEMETRY & AUDIT LOG ---
+        # Table 5: Telemetry
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS system_telemetry (
                 event_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -392,70 +391,7 @@ def init_leviathan_db():
         
         connection.commit()
     except sqlite3.Error as e:
-        st.error(f"DATABASE SCHEMA INITIALIZATION FAILED: {e}")
-    finally:
-        connection.close()
-# -----------------------------def init_leviathan_db():
-    """
-    Constructs the 5-Table Master Schema.
-    INCLUDES HOT-FIX: Automatically adds missing columns to legacy databases.
-    """
-    connection = get_db_connection()
-    if not connection:
-        return
-
-    try:
-        cursor = connection.cursor()
-        
-        # --- TABLE 1: MASTER USER REGISTRY ---
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                email TEXT PRIMARY KEY, 
-                full_name TEXT, 
-                vault_key TEXT, 
-                registration_date TEXT,
-                membership_tier TEXT DEFAULT 'Senior Counsel',
-                account_status TEXT DEFAULT 'Active',
-                total_queries INTEGER DEFAULT 0,
-                last_login TEXT,
-                provider TEXT DEFAULT 'Local'
-            )
-        ''')
-        
-        # --- SCHEMA MIGRATION LOGIC (REPAIR MISSING COLUMNS) ---
-        cursor.execute("PRAGMA table_info(users)")
-        existing_columns = [col[1] for col in cursor.fetchall()]
-        
-        # Fix: full_name missing
-        if 'full_name' not in existing_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
-            connection.commit()
-            
-        # Fix: vault_key missing
-        if 'vault_key' not in existing_columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN vault_key TEXT")
-            connection.commit()
-
-        # --- TABLE 2: CASE CHAMBERS REGISTRY ---
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS chambers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                owner_email TEXT, 
-                chamber_name TEXT, 
-                init_date TEXT,
-                chamber_type TEXT DEFAULT 'General Litigation',
-                case_status TEXT DEFAULT 'Active',
-                is_archived INTEGER DEFAULT 0,
-                FOREIGN KEY(owner_email) REFERENCES users(email)
-            )
-        ''')
-        
-        # Rest of your tables (message_logs, law_assets, system_telemetry)
-        # remain exactly as they were in Section 4.
-        
-        connection.commit()
-    except sqlite3.Error as e:
-        st.error(f"DATABASE SCHEMA INITIALIZATION FAILED: {e}")
+        st.error(f"DATABASE REPAIR FAILED: {e}")
     finally:
         connection.close()
 # SECTION 5: DATABASE TRANSACTIONAL OPERATIONS (CRUD)
@@ -929,6 +865,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
