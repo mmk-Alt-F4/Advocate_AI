@@ -645,7 +645,152 @@ def render_main_interface():
     elif nav_mode == "System Admin":
         st.header("🛡️ System Administration Console")
         st.table([{"Name": "Saim Ahmed", "Designation": "Lead Architect"}, {"Name": "Huzaifa Khan", "Designation": "AI Lead"}, {"Name": "Mustafa Khan", "Designation": "DBA"}, {"Name": "Ibrahim Sohail", "Designation": "UI Lead"}, {"Name": "Daniyal Faraz", "Designation": "QA Lead"}])
+# ------------------------------------------------------------------------------# ------------------------------------------------------------------------------
+# SECTION 8: UI LAYOUT - SOVEREIGN CHAMBERS (MAIN WORKSTATION)
 # ------------------------------------------------------------------------------
+
+def render_main_interface():
+    """
+    Constructs the Primary AI Workstation UI.
+    Includes Sidebar navigation, Case management, Law Library, and the Chat engine.
+    """
+    apply_leviathan_shaders()
+    
+    # Language Context Map
+    lexicon = {
+        "English": "en-US", 
+        "Urdu": "ur-PK", 
+        "Sindhi": "sd-PK", 
+        "Punjabi": "pa-PK"
+    }
+
+    # --- SIDEBAR DESIGN ---
+    with st.sidebar:
+        st.markdown("<div class='logo-text'>⚖️ ALPHA APEX</div>", unsafe_allow_html=True)
+        st.markdown("<div class='sub-logo-text'>Leviathan Suite v36.5</div>", unsafe_allow_html=True)
+        
+        st.markdown("**Sovereign Navigation Hub**")
+        nav_mode = st.radio(
+            "Navigation", 
+            ["Chambers", "Law Library", "System Admin"], 
+            label_visibility="collapsed"
+        )
+        
+        st.divider()
+        
+        if nav_mode == "Chambers":
+            st.markdown("**Active Case Files**")
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT chamber_name FROM chambers WHERE owner_email=?", (st.session_state.user_email,))
+            user_chambers = [r[0] for r in cursor.fetchall()]
+            conn.close()
+            
+            if not user_chambers:
+                user_chambers = ["General Litigation Chamber"]
+                
+            st.session_state.active_ch = st.radio(
+                "Select Case", 
+                user_chambers, 
+                label_visibility="collapsed"
+            )
+            
+            col_add, col_mail = st.columns(2)
+            with col_add:
+                if st.button("➕ New"): st.session_state.trigger_new_ch = True
+            with col_mail:
+                if st.button("📧 Brief"):
+                    hist = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
+                    if dispatch_legal_brief(st.session_state.user_email, st.session_state.active_ch, hist):
+                        st.success("Brief Dispatched")
+
+        st.divider()
+        
+        with st.expander("⚙️ Settings & help"):
+            st.caption("AI Configuration")
+            sys_persona = st.text_input("Assistant Persona", value="Senior High Court Advocate")
+            sys_lang = st.selectbox("Interface Language", list(lexicon.keys()))
+            
+            st.divider()
+            if st.button("🚪 Secure Logout", use_container_width=True):
+                st.session_state.logged_in = False
+                st.rerun()
+
+    # --- MAIN CONTENT AREA ---
+    if nav_mode == "Chambers":
+        st.header(f"💼 CASE: {st.session_state.active_ch}")
+        st.caption("Strategic Litigation Environment | End-to-End Encryption Verified")
+        
+        history_canvas = st.container()
+        with history_canvas:
+            chat_history = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
+            for msg in chat_history:
+                with st.chat_message(msg["role"]):
+                    st.write(msg["content"])
+        
+        # ALIGNED INPUT BAR CSS
+        st.markdown("""
+            <style>
+                .stChatInputContainer { padding-right: 60px !important; }
+                .mic-container { position: fixed; bottom: 38px; right: 4.5%; z-index: 999999; }
+                .mic-container button { background: transparent !important; border: none !important; font-size: 22px !important; box-shadow: none !important; }
+            </style>
+        """, unsafe_allow_html=True)
+
+        input_text = st.chat_input("Enter Legal Query or Strategy Request...")
+        
+        with st.container():
+            st.markdown('<div class="mic-container">', unsafe_allow_html=True)
+            input_voice = speech_to_text(
+                language=lexicon[sys_lang], 
+                start_prompt="🎙️", 
+                stop_prompt="🛑", 
+                key='leviathan_mic', 
+                just_once=True
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        active_query = input_text or input_voice
+        
+        if active_query:
+            db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "user", active_query)
+            with history_canvas:
+                with st.chat_message("user"): st.write(active_query)
+            with st.chat_message("assistant"):
+                with st.spinner("Synthesizing Legal Analysis..."):
+                    engine = get_analytical_engine()
+                    if engine:
+                        prompt = f"Persona: {sys_persona}. Language: {sys_lang}. Query: {active_query}"
+                        ai_response = engine.invoke(prompt).content
+                        st.markdown(ai_response)
+                        db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "assistant", ai_response)
+            st.rerun()
+
+    elif nav_mode == "Law Library":
+        st.header("📚 Sovereign Law Library")
+        st.subheader("Asset Synchronization Vault")
+        
+        uploaded_files = st.file_uploader("Upload Legal Precedents (PDF)", accept_multiple_files=True, type=['pdf'])
+        if uploaded_files:
+            for f in uploaded_files:
+                st.info(f"File Synced: {f.name} ({f.size//1024} KB)")
+        
+        st.divider()
+        st.markdown("**Available Jurisprudence Assets**")
+        st.caption("No synchronized assets detected in local repository.")
+
+    elif nav_mode == "System Admin":
+        st.header("🛡️ System Administration Console")
+        st.subheader("Architectural Board")
+        architects = [
+            {"Name": "Saim Ahmed", "Designation": "Lead Architect", "Domain": "System Logic"},
+            {"Name": "Huzaifa Khan", "Designation": "AI Lead", "Domain": "LLM Tuning"},
+            {"Name": "Mustafa Khan", "Designation": "DBA", "Domain": "SQL Security"},
+            {"Name": "Ibrahim Sohail", "Designation": "UI Lead", "Domain": "Shaders"},
+            {"Name": "Daniyal Faraz", "Designation": "QA Lead", "Domain": "Integration"}
+        ]
+        st.table(architects)
+#-------------------------------------------------------------------------------        
 # SECTION 9: UI LAYOUT - SOVEREIGN PORTAL (AUTHENTICATION)
 # ------------------------------------------------------------------------------
 
@@ -716,6 +861,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
