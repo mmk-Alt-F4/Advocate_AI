@@ -281,43 +281,31 @@ def apply_leviathan_shaders():
 # SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
+# ------------------------------------------------------------------------------
+
 def get_db_connection():
-    """
-    Creates a thread-safe connection to the advocate_ai_v2.db file.
-    Implements High-Availability PRAGMAs for Enterprise stability.
-    """
     try:
         db_path = SYSTEM_CONFIG["DB_FILENAME"]
         connection = sqlite3.connect(db_path, check_same_thread=False)
-        
-        # Performance Tuning: Write-Ahead Logging
         connection.execute("PRAGMA journal_mode=WAL;") 
         connection.execute("PRAGMA synchronous=NORMAL;")
         connection.execute("PRAGMA cache_size=10000;")
         connection.execute("PRAGMA foreign_keys=ON;")
-        
         return connection
     except sqlite3.Error as e:
         st.error(f"CRITICAL: Persistence Engine Failure. Details: {e}")
         return None
 
 def init_leviathan_db():
-    """
-    Constructs/Repairs the 5-Table Master Schema.
-    FORCED REPAIR: Injects all missing columns required for v36.5 compliance 
-    without deleting existing data.
-    """
     connection = get_db_connection()
-    if not connection:
-        return
-
+    if not connection: return
     try:
         cursor = connection.cursor()
-        
-        # 1. ENSURE BASE USERS TABLE EXISTS
         cursor.execute("CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY)")
-
-        # 2. DEFINE REQUIRED USER COLUMNS AND THEIR TYPES
+        
+        # REQUIRED COLUMN INJECTION (Repair Loop)
         required_user_columns = {
             "full_name": "TEXT",
             "vault_key": "TEXT",
@@ -328,72 +316,25 @@ def init_leviathan_db():
             "last_login": "TEXT",
             "provider": "TEXT DEFAULT 'Local'"
         }
-
-        # 3. SCAN USERS SCHEMA AND INJECT MISSING PIECES
         cursor.execute("PRAGMA table_info(users)")
         existing_user_cols = [col[1] for col in cursor.fetchall()]
-
         for col_name, col_type in required_user_columns.items():
             if col_name not in existing_user_cols:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
-                connection.commit()
-
-        # 4. INITIALIZE REMAINING TABLES
-        # Table 2: Chambers Registry
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS chambers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                owner_email TEXT, 
-                chamber_name TEXT, 
-                init_date TEXT,
-                chamber_type TEXT DEFAULT 'General Litigation',
-                case_status TEXT DEFAULT 'Active',
-                is_archived INTEGER DEFAULT 0,
-                FOREIGN KEY(owner_email) REFERENCES users(email)
-            )
-        ''')
         
-        # Table 3: Message Logs
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS message_logs (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                chamber_id INTEGER, 
-                sender_role TEXT, 
-                message_body TEXT, 
-                ts_created TEXT,
-                token_count INTEGER DEFAULT 0,
-                FOREIGN KEY(chamber_id) REFERENCES chambers(id)
-            )
-        ''')
-        
-        # Table 4: Law Assets
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS law_assets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                filename TEXT, 
-                filesize_kb REAL, 
-                page_count INTEGER, 
-                sync_timestamp TEXT,
-                asset_status TEXT DEFAULT 'Verified'
-            )
-        ''')
-        
-        # Table 5: Telemetry
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS system_telemetry (
-                event_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_email TEXT,
-                event_type TEXT,
-                description TEXT,
-                event_timestamp TEXT
-            )
-        ''')
-        
+        # Existing Table Structures
+        cursor.execute("CREATE TABLE IF NOT EXISTS chambers (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_email TEXT, chamber_name TEXT, init_date TEXT, chamber_type TEXT DEFAULT 'General Litigation', case_status TEXT DEFAULT 'Active', is_archived INTEGER DEFAULT 0, FOREIGN KEY(owner_email) REFERENCES users(email))")
+        cursor.execute("CREATE TABLE IF NOT EXISTS message_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, chamber_id INTEGER, sender_role TEXT, message_body TEXT, ts_created TEXT, token_count INTEGER DEFAULT 0, FOREIGN KEY(chamber_id) REFERENCES chambers(id))")
+        cursor.execute("CREATE TABLE IF NOT EXISTS law_assets (id INTEGER PRIMARY KEY AUTOINCREMENT, filename TEXT, filesize_kb REAL, page_count INTEGER, sync_timestamp TEXT, asset_status TEXT DEFAULT 'Verified')")
+        cursor.execute("CREATE TABLE IF NOT EXISTS system_telemetry (event_id INTEGER PRIMARY KEY AUTOINCREMENT, user_email TEXT, event_type TEXT, description TEXT, event_timestamp TEXT)")
         connection.commit()
     except sqlite3.Error as e:
-        st.error(f"DATABASE REPAIR FAILED: {e}")
+        st.error(f"DATABASE SCHEMA INITIALIZATION FAILED: {e}")
     finally:
         connection.close()
+
+init_leviathan_db()
+#-------------------------------------------------------------------------------
 # SECTION 5: DATABASE TRANSACTIONAL OPERATIONS (CRUD)
 # ------------------------------------------------------------------------------
 
@@ -599,78 +540,37 @@ def dispatch_legal_brief(target_email, chamber_name, history_data):
 # SECTION 7: GOOGLE OAUTH CALLBACK & AUTO-REGISTRATION HANDLER
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# SECTION 7: GOOGLE OAUTH CALLBACK & AUTO-REGISTRATION HANDLER
+# ------------------------------------------------------------------------------
+
 def handle_google_callback():
-    """
-    Monitors the URI for Google OAuth codes and triggers automatic registration
-    within advocate_ai_v2.db for first-time sign-ins.
-    """
     params = st.query_params
-    
     if "code" in params:
-        try:
-            # Identity Payload Extraction (Simulation of JWT decoding)
-            # In production, exchange 'code' for 'id_token' via Google OAuth API
-            g_email = "oauth_user@example.com" 
-            g_name = "Google Counsel"
-            g_oauth_key = "OAUTH_FEDERATED_IDENTIFIER"
-            
-            conn = get_db_connection()
-            if conn:
-                cursor = conn.cursor()
-                
-                # Check for existing identity
-                cursor.execute("SELECT email, full_name FROM users WHERE email = ?", (g_email,))
-                existing_user = cursor.fetchone()
-                
-                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
-                if not existing_user:
-                    # AUTOMATIC FIRST-TIME REGISTRATION LOGIC
-                    cursor.execute('''
-                        INSERT INTO users (email, full_name, vault_key, registration_date, last_login, provider) 
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (g_email, g_name, g_oauth_key, ts, ts, 'Google'))
-                    
-                    cursor.execute('''
-                        INSERT INTO chambers (owner_email, chamber_name, init_date) 
-                        VALUES (?, ?, ?)
-                    ''', (g_email, "General Litigation Chamber", ts))
-                    
-                    conn.commit()
-                    db_log_event(g_email, "OAUTH_SIGNUP", "Automatic record creation in advocate_ai_v2.db")
-                    st.toast(f"New Identity Verified: {g_name}", icon="⚖️")
-                else:
-                    # Sync login timestamp for existing OAuth user
-                    cursor.execute("UPDATE users SET last_login = ? WHERE email = ?", (ts, g_email))
-                    conn.commit()
-                    db_log_event(g_email, "OAUTH_LOGIN", "Synchronized via Google Auth")
-                
-                conn.close()
-                
-                # Commit identity to session
-                st.session_state.logged_in = True
-                st.session_state.user_email = g_email
-                st.session_state.username = g_name
-                
-                # Clear security parameters and refresh
-                st.query_params.clear()
-                st.rerun()
-                
-        except Exception as oauth_err:
-            st.error(f"Google OAuth Synchronization Error: {oauth_err}")
+        st.session_state.logged_in = True
+        st.query_params.clear()
+        st.rerun()
 
 def render_google_sign_in():
-    """Renders the professional Google OAuth Access Point."""
-    # Build your actual Google Cloud Console URL here
-    google_oauth_uri = "https://accounts.google.com/o/oauth2/auth?..." 
-    
-    st.markdown(f"""
-        <a href="{google_oauth_uri}" target="_self" class="google-btn">
-            <img class="google-icon" src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"/>
-            Continue with Google Counsel Access
-        </a>
-    """, unsafe_allow_html=True)
-
+    if st.button("Continue with Google Counsel Access", use_container_width=True):
+        g_email = "counsel.auth@google.com"
+        g_name = "Authorized Google Counsel"
+        conn = get_db_connection()
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT email FROM users WHERE email=?", (g_email,))
+            if not cursor.fetchone():
+                ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cursor.execute("INSERT INTO users (email, full_name, vault_key, registration_date, provider) VALUES (?, ?, ?, ?, ?)", 
+                               (g_email, g_name, "OAUTH_SECURE", ts, "Google"))
+                cursor.execute("INSERT INTO chambers (owner_email, chamber_name, init_date) VALUES (?, ?, ?)", 
+                               (g_email, "General Litigation Chamber", ts))
+                conn.commit()
+            conn.close()
+        st.session_state.logged_in = True
+        st.session_state.user_email = g_email
+        st.session_state.username = g_name
+        st.rerun()
 # ------------------------------------------------------------------------------
 # SECTION 8: UI LAYOUT - SOVEREIGN CHAMBERS (MAIN WORKSTATION)
 # ------------------------------------------------------------------------------
@@ -680,35 +580,14 @@ def render_google_sign_in():
 # ------------------------------------------------------------------------------
 
 def render_main_interface():
-    """
-    Constructs the Primary AI Workstation UI.
-    Includes Sidebar navigation, Case management, and the Chat engine.
-    FIXED: Microphone icon is now horizontally aligned with the message bar.
-    """
     apply_leviathan_shaders()
-    
-    # Language Context Map
-    lexicon = {
-        "English": "en-US", 
-        "Urdu": "ur-PK", 
-        "Sindhi": "sd-PK", 
-        "Punjabi": "pa-PK"
-    }
+    lexicon = {"English": "en-US", "Urdu": "ur-PK", "Sindhi": "sd-PK", "Punjabi": "pa-PK"}
 
-    # --- SIDEBAR DESIGN --- (Kept identical to original)
     with st.sidebar:
         st.markdown("<div class='logo-text'>⚖️ ALPHA APEX</div>", unsafe_allow_html=True)
         st.markdown("<div class='sub-logo-text'>Leviathan Suite v36.5</div>", unsafe_allow_html=True)
-        
-        st.markdown("**Sovereign Navigation Hub**")
-        nav_mode = st.radio(
-            "Navigation", 
-            ["Chambers", "Law Library", "System Admin"], 
-            label_visibility="collapsed"
-        )
-        
+        nav_mode = st.radio("Navigation", ["Chambers", "Law Library", "System Admin"], label_visibility="collapsed")
         st.divider()
-        
         if nav_mode == "Chambers":
             st.markdown("**Active Case Files**")
             conn = get_db_connection()
@@ -716,16 +595,8 @@ def render_main_interface():
             cursor.execute("SELECT chamber_name FROM chambers WHERE owner_email=?", (st.session_state.user_email,))
             user_chambers = [r[0] for r in cursor.fetchall()]
             conn.close()
-            
-            if not user_chambers:
-                user_chambers = ["General Litigation Chamber"]
-                
-            st.session_state.active_ch = st.radio(
-                "Select Case", 
-                user_chambers, 
-                label_visibility="collapsed"
-            )
-            
+            if not user_chambers: user_chambers = ["General Litigation Chamber"]
+            st.session_state.active_ch = st.radio("Select Case", user_chambers, label_visibility="collapsed")
             col_add, col_mail = st.columns(2)
             with col_add:
                 if st.button("➕ New"): st.session_state.trigger_new_ch = True
@@ -734,101 +605,46 @@ def render_main_interface():
                     hist = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
                     if dispatch_legal_brief(st.session_state.user_email, st.session_state.active_ch, hist):
                         st.success("Brief Dispatched")
-
         st.divider()
-        
         with st.expander("⚙️ Settings & help"):
-            st.caption("AI Configuration")
             sys_persona = st.text_input("Assistant Persona", value="Senior High Court Advocate")
             sys_lang = st.selectbox("Interface Language", list(lexicon.keys()))
-            
-            st.divider()
             if st.button("🚪 Secure Logout", use_container_width=True):
                 st.session_state.logged_in = False
                 st.rerun()
 
-    # --- MAIN CONTENT AREA ---
     if nav_mode == "Chambers":
         st.header(f"💼 CASE: {st.session_state.active_ch}")
-        st.caption("Strategic Litigation Environment | End-to-End Encryption Verified")
-        
-        # History Canvas
         history_canvas = st.container()
         with history_canvas:
             chat_history = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
             for msg in chat_history:
-                with st.chat_message(msg["role"]):
-                    st.write(msg["content"])
+                with st.chat_message(msg["role"]): st.write(msg["content"])
         
-        # --- FIXED MIC ALIGNMENT LOGIC ---
-        # 1. Custom CSS to inject the mic into the bottom input bar zone
-        st.markdown("""
-            <style>
-                /* Adjust chat input to make room for the mic on the right */
-                .stChatInputContainer {
-                    padding-right: 60px !important;
-                }
-                /* Position the mic precisely inside the input bar area */
-                .mic-container {
-                    position: fixed;
-                    bottom: 38px;
-                    right: 4.5%;
-                    z-index: 999999;
-                }
-                /* Clean up the mic button appearance */
-                .mic-container button {
-                    background: transparent !important;
-                    border: none !important;
-                    font-size: 22px !important;
-                    box-shadow: none !important;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-
-        # 2. Render Chat Input
+        # ALIGNED INPUT BAR
+        st.markdown("<style>.stChatInputContainer {padding-right: 60px !important;} .mic-container {position: fixed; bottom: 38px; right: 4.5%; z-index: 999999;} .mic-container button {background: transparent !important; border: none !important; font-size: 22px !important;}</style>", unsafe_allow_html=True)
         input_text = st.chat_input("Enter Legal Query or Strategy Request...")
-        
-        # 3. Render Universal Mic in the Absolute Positioned Container
         with st.container():
             st.markdown('<div class="mic-container">', unsafe_allow_html=True)
-            input_voice = speech_to_text(
-                language=lexicon[sys_lang], 
-                start_prompt="🎙️", 
-                stop_prompt="🛑", 
-                key='leviathan_mic', 
-                just_once=True
-            )
+            input_voice = speech_to_text(language=lexicon[sys_lang], start_prompt="🎙️", stop_prompt="🛑", key='leviathan_mic', just_once=True)
             st.markdown('</div>', unsafe_allow_html=True)
         
         active_query = input_text or input_voice
-        
         if active_query:
             db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "user", active_query)
             with history_canvas:
                 with st.chat_message("user"): st.write(active_query)
-                
             with st.chat_message("assistant"):
                 with st.spinner("Synthesizing Legal Analysis..."):
                     engine = get_analytical_engine()
                     if engine:
-                        prompt = f"Persona: {sys_persona}. Language: {sys_lang}. Query: {active_query}"
-                        ai_response = engine.invoke(prompt).content
+                        ai_response = engine.invoke(f"Persona: {sys_persona}. Language: {sys_lang}. Query: {active_query}").content
                         st.markdown(ai_response)
                         db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "assistant", ai_response)
             st.rerun()
-
     elif nav_mode == "System Admin":
-        # (Admin table logic kept same as original)
         st.header("🛡️ System Administration Console")
-        st.subheader("Architectural Board")
-        architects = [
-            {"Name": "Saim Ahmed", "Designation": "Lead Architect", "Domain": "System Logic"},
-            {"Name": "Huzaifa Khan", "Designation": "AI Lead", "Domain": "LLM Tuning"},
-            {"Name": "Mustafa Khan", "Designation": "DBA", "Domain": "SQL Security"},
-            {"Name": "Ibrahim Sohail", "Designation": "UI Lead", "Domain": "Shaders"},
-            {"Name": "Daniyal Faraz", "Designation": "QA Lead", "Domain": "Integration"}
-        ]
-        st.table(architects)
+        st.table([{"Name": "Saim Ahmed", "Designation": "Lead Architect"}, {"Name": "Huzaifa Khan", "Designation": "AI Lead"}, {"Name": "Mustafa Khan", "Designation": "DBA"}, {"Name": "Ibrahim Sohail", "Designation": "UI Lead"}, {"Name": "Daniyal Faraz", "Designation": "QA Lead"}])
 # ------------------------------------------------------------------------------
 # SECTION 9: UI LAYOUT - SOVEREIGN PORTAL (AUTHENTICATION)
 # ------------------------------------------------------------------------------
@@ -900,6 +716,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
