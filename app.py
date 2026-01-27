@@ -675,11 +675,15 @@ def render_google_sign_in():
 # SECTION 8: UI LAYOUT - SOVEREIGN CHAMBERS (MAIN WORKSTATION)
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# SECTION 8: UI LAYOUT - SOVEREIGN CHAMBERS (MAIN WORKSTATION)
+# ------------------------------------------------------------------------------
+
 def render_main_interface():
     """
     Constructs the Primary AI Workstation UI.
     Includes Sidebar navigation, Case management, and the Chat engine.
-    Integrated Universal Mic Icon with direct horizontal alignment.
+    FIXED: Microphone icon is now horizontally aligned with the message bar.
     """
     apply_leviathan_shaders()
     
@@ -691,7 +695,7 @@ def render_main_interface():
         "Punjabi": "pa-PK"
     }
 
-    # --- SIDEBAR DESIGN ---
+    # --- SIDEBAR DESIGN --- (Kept identical to original)
     with st.sidebar:
         st.markdown("<div class='logo-text'>⚖️ ALPHA APEX</div>", unsafe_allow_html=True)
         st.markdown("<div class='sub-logo-text'>Leviathan Suite v36.5</div>", unsafe_allow_html=True)
@@ -707,7 +711,6 @@ def render_main_interface():
         
         if nav_mode == "Chambers":
             st.markdown("**Active Case Files**")
-            
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT chamber_name FROM chambers WHERE owner_email=?", (st.session_state.user_email,))
@@ -749,6 +752,7 @@ def render_main_interface():
         st.header(f"💼 CASE: {st.session_state.active_ch}")
         st.caption("Strategic Litigation Environment | End-to-End Encryption Verified")
         
+        # History Canvas
         history_canvas = st.container()
         with history_canvas:
             chat_history = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
@@ -756,33 +760,37 @@ def render_main_interface():
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
         
-        # --- INTEGRATED INPUT CLUSTER ---
-        # Stylized to pull the microphone icon into the visual space of the input bar
+        # --- FIXED MIC ALIGNMENT LOGIC ---
+        # 1. Custom CSS to inject the mic into the bottom input bar zone
         st.markdown("""
             <style>
+                /* Adjust chat input to make room for the mic on the right */
                 .stChatInputContainer {
-                    padding-right: 50px !important;
+                    padding-right: 60px !important;
                 }
-                .mic-fix {
+                /* Position the mic precisely inside the input bar area */
+                .mic-container {
                     position: fixed;
-                    bottom: 43px;
-                    right: 4%;
-                    z-index: 1000;
+                    bottom: 38px;
+                    right: 4.5%;
+                    z-index: 999999;
                 }
-                /* Removing default button styling from the mic component */
-                .mic-fix button {
-                    background-color: transparent !important;
+                /* Clean up the mic button appearance */
+                .mic-container button {
+                    background: transparent !important;
                     border: none !important;
+                    font-size: 22px !important;
                     box-shadow: none !important;
-                    font-size: 20px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
 
+        # 2. Render Chat Input
         input_text = st.chat_input("Enter Legal Query or Strategy Request...")
         
+        # 3. Render Universal Mic in the Absolute Positioned Container
         with st.container():
-            st.markdown('<div class="mic-fix">', unsafe_allow_html=True)
+            st.markdown('<div class="mic-container">', unsafe_allow_html=True)
             input_voice = speech_to_text(
                 language=lexicon[sys_lang], 
                 start_prompt="🎙️", 
@@ -807,10 +815,10 @@ def render_main_interface():
                         ai_response = engine.invoke(prompt).content
                         st.markdown(ai_response)
                         db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "assistant", ai_response)
-            
             st.rerun()
 
     elif nav_mode == "System Admin":
+        # (Admin table logic kept same as original)
         st.header("🛡️ System Administration Console")
         st.subheader("Architectural Board")
         architects = [
@@ -892,6 +900,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
