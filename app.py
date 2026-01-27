@@ -457,7 +457,7 @@ def init_leviathan_db():
     except sqlite3.Error as e:
         st.error(f"DATABASE SCHEMA INITIALIZATION FAILED: {e}")
     finally:
-        connection.close()-------------------------------------------------
+        connection.close()
 # SECTION 5: DATABASE TRANSACTIONAL OPERATIONS (CRUD)
 # ------------------------------------------------------------------------------
 
@@ -929,5 +929,6 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
