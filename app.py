@@ -679,6 +679,7 @@ def render_main_interface():
     """
     Constructs the Primary AI Workstation UI.
     Includes Sidebar navigation, Case management, and the Chat engine.
+    Integrated voice-to-text directly into the input cluster.
     """
     apply_leviathan_shaders()
     
@@ -758,9 +759,22 @@ def render_main_interface():
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
         
-        # Input Cluster
-        input_text = st.chat_input("Enter Legal Query or Strategy Request...")
-        input_voice = speech_to_text(language=lexicon[sys_lang], key='leviathan_mic', just_once=True)
+        # --- MERGED INPUT CLUSTER ---
+        # Using columns to place the mic button inside the same horizontal line as chat_input
+        input_col, mic_col = st.columns([0.85, 0.15])
+        
+        with input_col:
+            input_text = st.chat_input("Enter Legal Query or Strategy Request...")
+        
+        with mic_col:
+            # st-mic-recorder renders as a button with a mic icon
+            input_voice = speech_to_text(
+                language=lexicon[sys_lang], 
+                start_prompt="🎤", 
+                stop_prompt="🛑", 
+                key='leviathan_mic', 
+                just_once=True
+            )
         
         active_query = input_text or input_voice
         
@@ -865,6 +879,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
