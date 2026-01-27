@@ -281,6 +281,10 @@ def apply_leviathan_shaders():
 # SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
 # ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
+# SECTION 4: RELATIONAL DATABASE PERSISTENCE ENGINE (SQLITE3)
+# ------------------------------------------------------------------------------
+
 def get_db_connection():
     """
     Creates a thread-safe connection to the advocate_ai_v2.db file.
@@ -303,8 +307,8 @@ def get_db_connection():
 
 def init_leviathan_db():
     """
-    Constructs the 5-Table Master Schema for the Alpha Apex ecosystem.
-    Expanded with explicit column definitions to ensure structural integrity.
+    Constructs the 5-Table Master Schema.
+    INCLUDES HOT-FIX: Automatically adds 'full_name' column to legacy databases.
     """
     connection = get_db_connection()
     if not connection:
@@ -328,6 +332,14 @@ def init_leviathan_db():
             )
         ''')
         
+        # --- CRITICAL FIX: SCHEMA MIGRATION LOGIC ---
+        # This block detects if 'full_name' is missing from an old DB and adds it.
+        cursor.execute("PRAGMA table_info(users)")
+        existing_columns = [col[1] for col in cursor.fetchall()]
+        if 'full_name' not in existing_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+            connection.commit()
+
         # --- TABLE 2: CASE CHAMBERS REGISTRY ---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS chambers (
@@ -383,7 +395,6 @@ def init_leviathan_db():
         st.error(f"DATABASE SCHEMA INITIALIZATION FAILED: {e}")
     finally:
         connection.close()
-
 # ------------------------------------------------------------------------------
 # SECTION 5: DATABASE TRANSACTIONAL OPERATIONS (CRUD)
 # ------------------------------------------------------------------------------
@@ -856,3 +867,4 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
