@@ -679,7 +679,7 @@ def render_main_interface():
     """
     Constructs the Primary AI Workstation UI.
     Includes Sidebar navigation, Case management, and the Chat engine.
-    Integrated voice-to-text directly into the input cluster.
+    Integrated Universal Mic Icon with direct horizontal alignment.
     """
     apply_leviathan_shaders()
     
@@ -708,7 +708,6 @@ def render_main_interface():
         if nav_mode == "Chambers":
             st.markdown("**Active Case Files**")
             
-            # Dynamically fetch chambers for current user
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT chamber_name FROM chambers WHERE owner_email=?", (st.session_state.user_email,))
@@ -724,7 +723,6 @@ def render_main_interface():
                 label_visibility="collapsed"
             )
             
-            # Action Cluster
             col_add, col_mail = st.columns(2)
             with col_add:
                 if st.button("➕ New"): st.session_state.trigger_new_ch = True
@@ -751,7 +749,6 @@ def render_main_interface():
         st.header(f"💼 CASE: {st.session_state.active_ch}")
         st.caption("Strategic Litigation Environment | End-to-End Encryption Verified")
         
-        # History Canvas
         history_canvas = st.container()
         with history_canvas:
             chat_history = db_fetch_chamber_history(st.session_state.user_email, st.session_state.active_ch)
@@ -759,32 +756,49 @@ def render_main_interface():
                 with st.chat_message(msg["role"]):
                     st.write(msg["content"])
         
-        # --- MERGED INPUT CLUSTER ---
-        # Using columns to place the mic button inside the same horizontal line as chat_input
-        input_col, mic_col = st.columns([0.85, 0.15])
+        # --- INTEGRATED INPUT CLUSTER ---
+        # Stylized to pull the microphone icon into the visual space of the input bar
+        st.markdown("""
+            <style>
+                .stChatInputContainer {
+                    padding-right: 50px !important;
+                }
+                .mic-fix {
+                    position: fixed;
+                    bottom: 43px;
+                    right: 4%;
+                    z-index: 1000;
+                }
+                /* Removing default button styling from the mic component */
+                .mic-fix button {
+                    background-color: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    font-size: 20px !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
+        input_text = st.chat_input("Enter Legal Query or Strategy Request...")
         
-        with input_col:
-            input_text = st.chat_input("Enter Legal Query or Strategy Request...")
-        
-        with mic_col:
-            # st-mic-recorder renders as a button with a mic icon
+        with st.container():
+            st.markdown('<div class="mic-fix">', unsafe_allow_html=True)
             input_voice = speech_to_text(
                 language=lexicon[sys_lang], 
-                start_prompt="🎤", 
+                start_prompt="🎙️", 
                 stop_prompt="🛑", 
                 key='leviathan_mic', 
                 just_once=True
             )
+            st.markdown('</div>', unsafe_allow_html=True)
         
         active_query = input_text or input_voice
         
         if active_query:
-            # 1. Log and Display User Query
             db_log_consultation(st.session_state.user_email, st.session_state.active_ch, "user", active_query)
             with history_canvas:
                 with st.chat_message("user"): st.write(active_query)
                 
-            # 2. AI Analytical Response
             with st.chat_message("assistant"):
                 with st.spinner("Synthesizing Legal Analysis..."):
                     engine = get_analytical_engine()
@@ -807,7 +821,6 @@ def render_main_interface():
             {"Name": "Daniyal Faraz", "Designation": "QA Lead", "Domain": "Integration"}
         ]
         st.table(architects)
-
 # ------------------------------------------------------------------------------
 # SECTION 9: UI LAYOUT - SOVEREIGN PORTAL (AUTHENTICATION)
 # ------------------------------------------------------------------------------
@@ -879,6 +892,7 @@ else:
 # ==============================================================================
 # END OF ALPHA APEX LEVIATHAN CORE - SYSTEM STABLE
 # ==============================================================================
+
 
 
 
